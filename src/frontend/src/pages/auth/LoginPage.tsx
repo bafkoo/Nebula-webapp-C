@@ -255,8 +255,7 @@ export default function LoginPage(): React.JSX.Element {
   };
 
   const handleForgotPassword = () => {
-    console.log('Восстановление пароля');
-    // Здесь будет переход на страницу восстановления
+    navigate('/reset-password');
   };
 
   return (
