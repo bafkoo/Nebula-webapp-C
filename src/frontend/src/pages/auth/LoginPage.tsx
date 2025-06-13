@@ -1,5 +1,6 @@
 import { CheckIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import gradientMainBg from "../../assets/auth/login/backgrounds/gradient-main.webp";
 import logoImage from "../../assets/auth/login/logos/logo (2).png";
 
@@ -22,6 +23,9 @@ export default function LoginPage(): React.JSX.Element {
 
   // Состояние для анимаций
   const [isVisible, setIsVisible] = useState(false);
+
+  // Навигация
+  const navigate = useNavigate();
 
   // Анимация появления
   useEffect(() => {
@@ -316,13 +320,7 @@ export default function LoginPage(): React.JSX.Element {
       </div>
 
       {/* Main Form Container - с анимацией появления */}
-      <div 
-        className="min-h-screen flex items-center justify-center px-4 py-8 lg:px-8 relative z-40 form-container"
-        style={{
-          transform: 'scale(0.8)',
-          transformOrigin: 'center center'
-        }}
-      >
+      <div className="min-h-screen flex items-center justify-center px-4 py-8 lg:px-8 relative z-40 form-container">
         <div className="w-full max-w-[320px] sm:max-w-[400px] md:max-w-[480px] lg:max-w-[548px] mx-auto">
           
           {/* Header Section */}
@@ -652,7 +650,9 @@ export default function LoginPage(): React.JSX.Element {
                 fontFamily: 'Helvetica, sans-serif',
                 fontWeight: 700,
                 fontSize: '16px'
-              }}>
+              }}
+              onClick={() => navigate('/register')}
+            >
               Register
             </button>
           </div>

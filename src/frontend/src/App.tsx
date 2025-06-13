@@ -1,14 +1,38 @@
 import { useState } from 'react'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import './App.css'
 import LoginPage from './pages/auth/LoginPage'
+import RegisterPage from './pages/auth/RegisterPage'
 
 function App() {
   const [isAuthenticated] = useState(false)
 
+  // Если пользователь не авторизован, показываем auth роуты
   if (!isAuthenticated) {
-    return <LoginPage />
+    return (
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </BrowserRouter>
+    )
   }
 
+  // Если авторизован, показываем основное приложение
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/app" element={<MainApplication />} />
+        <Route path="*" element={<Navigate to="/app" replace />} />
+      </Routes>
+    </BrowserRouter>
+  )
+}
+
+// Основное приложение (Discord-интерфейс)
+function MainApplication() {
   return (
     <div className="h-screen w-screen bg-gray-800 flex overflow-hidden">
       {/* Server List */}
