@@ -181,14 +181,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const resetPassword = async (email: string) => {
     console.log('Reset password request for:', email);
-    // TODO: Добавить реальный API вызов
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await apiClient.forgotPassword({ email });
   };
 
   const updatePassword = async (token: string, newPassword: string) => {
     console.log('Update password with token:', token, 'New password length:', newPassword.length);
-    // TODO: Добавить реальный API вызов
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await apiClient.resetPassword({ token, newPassword });
   };
 
   const logout = () => {

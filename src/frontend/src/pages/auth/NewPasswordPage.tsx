@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
+import { EyeIcon, EyeOffIcon } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
-// Import images
+// Import images - используем правильный фон для newPassword
 import logoImage from '../../assets/auth/login/logos/logo (2).png';
 import newPasswordBackground from '../../assets/auth/newPassword/backgrounds/newPasswordBackround.png';
 
@@ -25,18 +26,26 @@ interface PasswordStrength {
   isValid: boolean;
 }
 
-const NewPasswordPage: React.FC = () => {
+export default function NewPasswordPage(): React.JSX.Element {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { token: paramToken } = useParams();
+  const { updatePassword } = useAuth();
+  
   const [formData, setFormData] = useState<FormData>({
     password: '',
     confirmPassword: ''
   });
+  
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const [isValidToken, setIsValidToken] = useState(true);
+  const [isCheckingToken, setIsCheckingToken] = useState(true);
+  
   const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>({
     hasMinLength: false,
     hasUpperCase: false,
@@ -44,14 +53,8 @@ const NewPasswordPage: React.FC = () => {
     hasSpecialChar: false,
     isValid: false
   });
-  const [isFormVisible, setIsFormVisible] = useState(false);
-  const [isValidToken, setIsValidToken] = useState(true);
-  const [isCheckingToken, setIsCheckingToken] = useState(true);
 
   // Get reset token from URL parameters or query string
-  // In real application, this would come from email link like:
-  // https://yourapp.com/reset-password/abc123token or
-  // https://yourapp.com/new-password?token=abc123token
   const resetToken = paramToken || searchParams.get('token');
 
   // Check token validity on component mount
@@ -66,11 +69,6 @@ const NewPasswordPage: React.FC = () => {
       try {
         // Simulate API call to verify token
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // In real app, this would be:
-        // const response = await verifyResetToken(resetToken);
-        // setIsValidToken(response.valid);
-        
         setIsValidToken(true); // For demo purposes
       } catch {
         setIsValidToken(false);
@@ -86,8 +84,8 @@ const NewPasswordPage: React.FC = () => {
   useEffect(() => {
     if (!isCheckingToken && isValidToken) {
       const timer = setTimeout(() => {
-        setIsFormVisible(true);
-      }, 300);
+        setIsVisible(true);
+      }, 100);
       return () => clearTimeout(timer);
     }
   }, [isCheckingToken, isValidToken]);
@@ -107,18 +105,17 @@ const NewPasswordPage: React.FC = () => {
     setPasswordStrength(strength);
   }, [formData.password]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
+  const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [field]: value
     }));
     
     // Clear specific error when user starts typing
-    if (errors[name as keyof FormErrors]) {
+    if (errors[field as keyof FormErrors]) {
       setErrors(prev => ({
         ...prev,
-        [name]: undefined
+        [field]: undefined
       }));
     }
   };
@@ -128,16 +125,16 @@ const NewPasswordPage: React.FC = () => {
 
     // Password validation
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = 'Пароль обязателен';
     } else if (!passwordStrength.isValid) {
-      newErrors.password = 'Password does not meet requirements';
+      newErrors.password = 'Пароль не соответствует требованиям';
     }
 
     // Confirm password validation
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
+      newErrors.confirmPassword = 'Подтвердите пароль';
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = 'Пароли не совпадают';
     }
 
     setErrors(newErrors);
@@ -153,25 +150,22 @@ const NewPasswordPage: React.FC = () => {
     setErrors({});
 
     try {
-      // Simulate API call with reset token
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      if (!resetToken) {
+        throw new Error('Токен сброса не найден');
+      }
       
-      // In real app, this would be:
-      // const response = await resetPassword({
-      //   token: resetToken,
-      //   newPassword: formData.password
-      // });
+      await updatePassword(resetToken, formData.password);
       
       // Success - navigate to login with success message
       navigate('/login', { 
         state: { 
-          message: 'Password updated successfully! Please log in with your new password.',
+          message: 'Пароль успешно изменен! Войдите с новым паролем.',
           type: 'success'
         }
       });
-    } catch {
+    } catch (error: unknown) {
       setErrors({ 
-        general: 'Failed to update password. Please try again or request a new reset link.' 
+        general: error.message || 'Не удалось изменить пароль. Попробуйте снова или запросите новую ссылку для сброса.' 
       });
     } finally {
       setIsLoading(false);
@@ -182,17 +176,241 @@ const NewPasswordPage: React.FC = () => {
     return isValid ? '#10B981' : '#EF4444';
   };
 
+  // CSS стили в стиле Nebula как в других страницах
+  const nebulaStyles = `
+    /* Убираем все отступы у body и html */
+    html, body, #root {
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      overflow-x: hidden !important;
+    }
+
+    /* CSS стили для автозаполнения */
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus,
+    input:-webkit-autofill:active,
+    input[type="password"]:-webkit-autofill {
+      -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+      -webkit-text-fill-color: #ffffff !important;
+      background-color: transparent !important;
+      background-image: none !important;
+      color: #ffffff !important;
+      font-family: 'Helvetica', sans-serif !important;
+      font-weight: 400 !important;
+      font-size: 18px !important;
+      transition: background-color 5000s ease-in-out 0s !important;
+      -webkit-transition: background-color 5000s ease-in-out 0s !important;
+    }
+
+    /* Анимация загрузки */
+    .loading-dots {
+      display: inline-flex;
+      gap: 4px;
+    }
+    
+    .loading-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: white;
+      animation: loadingBounce 1.4s infinite both;
+    }
+    
+    .loading-dot:nth-child(1) { animation-delay: -0.32s; }
+    .loading-dot:nth-child(2) { animation-delay: -0.16s; }
+    .loading-dot:nth-child(3) { animation-delay: 0s; }
+    
+    @keyframes loadingBounce {
+      0%, 80%, 100% {
+        transform: scale(0.7);
+        opacity: 0.7;
+      }
+      40% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    /* Анимация появления формы */
+    .form-container {
+      opacity: ${isVisible ? 1 : 0};
+      transform: ${isVisible ? 'translateY(0)' : 'translateY(40px)'};
+      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .logo-container {
+      opacity: ${isVisible ? 1 : 0};
+      transform: ${isVisible ? 'translateY(0)' : 'translateY(-20px)'};
+      transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.2s;
+    }
+
+    /* Простой hover эффект для кнопки глаза */
+    .eye-hover {
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .eye-hover:hover {
+      background: rgba(113, 119, 255, 0.1);
+      border-radius: 6px;
+      padding: 4px;
+    }
+    
+    .eye-hover:hover .eye-icon {
+      color: #7177FF !important;
+    }
+
+    /* Hover эффект для кнопки создания пароля */
+    .create-password-button {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .create-password-button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1) 100%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+    
+    .create-password-button:hover::before {
+      opacity: 1;
+    }
+    
+    .create-password-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 25px rgba(246, 184, 253, 0.4), 0 4px 12px rgba(49, 106, 215, 0.3);
+    }
+    
+    .create-password-button:active {
+      transform: translateY(0);
+      box-shadow: 0 4px 15px rgba(246, 184, 253, 0.3), 0 2px 8px rgba(49, 106, 215, 0.2);
+    }
+
+    /* Адаптивные стили для фонового изображения */
+    .newpassword-background {
+      background-size: cover !important;
+      background-position: center center !important;
+      background-repeat: no-repeat !important;
+      background-attachment: fixed;
+      width: 100vw !important;
+      height: 100vh !important;
+      min-height: 100vh !important;
+      min-width: 100vw !important;
+      /* Кроп изображения - убираем черные края */
+      background-size: 110% 110% !important;
+      background-position: center center !important;
+    }
+    
+    /* Mobile (до 640px) */
+    @media (max-width: 640px) {
+      .newpassword-background {
+        background-size: 115% 115% !important;
+        background-position: center center !important;
+        background-attachment: scroll;
+      }
+    }
+    
+    /* Tablet (641px - 1024px) */
+    @media (min-width: 641px) and (max-width: 1024px) {
+      .newpassword-background {
+        background-size: 110% 110% !important;
+        background-position: center center !important;
+        background-attachment: scroll;
+      }
+    }
+    
+    /* Desktop (1025px - 1440px) */
+    @media (min-width: 1025px) and (max-width: 1440px) {
+      .newpassword-background {
+        background-size: 108% 108% !important;
+        background-position: center center !important;
+        background-attachment: fixed;
+      }
+    }
+    
+    /* Large Desktop (1441px+) */
+    @media (min-width: 1441px) {
+      .newpassword-background {
+        background-size: 105% 105% !important;
+        background-position: center center !important;
+        background-attachment: fixed;
+      }
+    }
+  `;
+
   // Loading screen while checking token
   if (isCheckingToken) {
     return (
-      <div className="min-h-screen w-full relative overflow-hidden bg-[#252525] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 mx-auto mb-4">
-            <div className="w-full h-full border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
+      <div 
+        className="newpassword-background"
+        style={{ 
+          backgroundColor: '#252525',
+          backgroundImage: `url(${newPasswordBackground})`,
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          margin: 0,
+          padding: 0
+        }}
+      >
+        <style dangerouslySetInnerHTML={{ __html: nebulaStyles }} />
+        
+        {/* Logo - в левом верхнем углу как в других страницах */}
+        <div 
+          className="absolute left-20 top-10 z-50 logo-container"
+          style={{
+            transform: 'scale(0.8)',
+            transformOrigin: 'left top'
+          }}
+        >
+          <div className="flex items-center gap-4">
+            <img 
+              src={logoImage}
+              alt="Logo"
+              className="h-12 sm:h-16 lg:h-20 w-auto object-contain"
+            />
+            <span 
+              className="text-white text-2xl sm:text-3xl lg:text-4xl font-bold"
+              style={{
+                fontFamily: "'gg sans', 'Whitney', 'Helvetica Neue', Helvetica, Arial, sans-serif",
+                fontWeight: 600,
+                letterSpacing: '-0.02em'
+              }}
+            >
+              Nebula
+            </span>
           </div>
-          <p className="text-white text-lg" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
-            Verifying reset link...
-          </p>
+        </div>
+
+        <div className="relative z-10 min-h-screen flex items-center justify-center form-container">
+          <div className="text-center">
+            <div className="loading-dots mb-6">
+              <div className="loading-dot"></div>
+              <div className="loading-dot"></div>
+              <div className="loading-dot"></div>
+            </div>
+            <p 
+              className="text-white text-lg"
+              style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+            >
+              Проверяем ссылку для сброса...
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -201,48 +419,110 @@ const NewPasswordPage: React.FC = () => {
   // Invalid token screen
   if (!isValidToken) {
     return (
-      <div className="min-h-screen w-full relative overflow-hidden bg-[#252525] flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-8">
-          <div className="w-20 h-20 mx-auto mb-6 bg-red-500 rounded-full flex items-center justify-center">
-            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </div>
-          
-          <h1 
-            className="text-white text-3xl font-bold mb-4"
-            style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
-          >
-            Invalid Reset Link
-          </h1>
-          
-          <p 
-            className="text-white/70 text-lg mb-8"
-            style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
-          >
-            This password reset link is invalid or has expired. Please request a new password reset.
-          </p>
-
-          <div className="space-y-4">
-            <button
-              onClick={() => navigate('/reset-password')}
-              className="w-full h-[60px] rounded-lg text-white text-xl font-bold transition-all duration-300 hover:transform hover:-translate-y-1"
+      <div 
+        className="newpassword-background"
+        style={{ 
+          backgroundColor: '#252525',
+          backgroundImage: `url(${newPasswordBackground})`,
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          margin: 0,
+          padding: 0
+        }}
+      >
+        <style dangerouslySetInnerHTML={{ __html: nebulaStyles }} />
+        
+        {/* Logo - в левом верхнем углу */}
+        <div 
+          className="absolute left-20 top-10 z-50 logo-container"
+          style={{
+            transform: 'scale(0.8)',
+            transformOrigin: 'left top'
+          }}
+        >
+          <div className="flex items-center gap-4">
+            <img 
+              src={logoImage}
+              alt="Logo"
+              className="h-12 sm:h-16 lg:h-20 w-auto object-contain"
+            />
+            <span 
+              className="text-white text-2xl sm:text-3xl lg:text-4xl font-bold"
               style={{
-                background: 'linear-gradient(135deg, #7177FF 0%, #9B87F5 25%, #E879F9 75%, #F472B6 100%)',
-                fontFamily: 'Helvetica, Arial, sans-serif',
-                fontWeight: 700
+                fontFamily: "'gg sans', 'Whitney', 'Helvetica Neue', Helvetica, Arial, sans-serif",
+                fontWeight: 600,
+                letterSpacing: '-0.02em'
               }}
             >
-              Request New Reset Link
-            </button>
+              Nebula
+            </span>
+          </div>
+        </div>
+        
+        <div className="relative z-10 min-h-screen flex items-center justify-center form-container">
+          <div className="w-full max-w-sm sm:max-w-md lg:max-w-lg xl:max-w-[548px] px-4 sm:px-6 lg:px-8">
+            <div className="text-center space-y-6">
+              <div className="w-20 h-20 mx-auto mb-6 bg-red-500 rounded-full flex items-center justify-center">
+                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </div>
+              
+              <h1 
+                className="text-white font-bold text-2xl sm:text-3xl lg:text-[40px]"
+                style={{ 
+                  fontFamily: 'Helvetica, sans-serif',
+                  fontWeight: 700,
+                  lineHeight: '1.2'
+                }}
+              >
+                Недействительная ссылка
+              </h1>
+              
+              <p 
+                className="text-white/80 text-base sm:text-lg lg:text-[20px] leading-relaxed max-w-[450px] mx-auto"
+                style={{ 
+                  fontFamily: 'Helvetica, sans-serif',
+                  fontWeight: 400,
+                  lineHeight: '1.3'
+                }}
+              >
+                Эта ссылка для сброса пароля недействительна или истекла. Пожалуйста, запросите новую ссылку для сброса пароля.
+              </p>
 
-            <button
-              onClick={() => navigate('/login')}
-              className="w-full text-white/70 hover:text-white text-lg transition-colors py-3"
-              style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
-            >
-              Back to Login
-            </button>
+              <div className="space-y-4 pt-4">
+                <button
+                  onClick={() => navigate('/reset-password')}
+                  className="create-password-button w-full h-12 sm:h-14 lg:h-[60px] text-white font-bold text-base sm:text-lg md:text-xl lg:text-[24px] rounded transition-all duration-300"
+                  style={{
+                    background: 'linear-gradient(90.67deg, #F6B8FD -7.12%, #316AD7 114.37%)',
+                    fontFamily: 'Helvetica, sans-serif',
+                    fontWeight: 700,
+                    borderRadius: '8px',
+                    border: 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Запросить новую ссылку
+                </button>
+
+                <button
+                  onClick={() => navigate('/login')}
+                  className="w-full text-[#ABABAB] hover:text-gray-300 transition-colors py-2"
+                  style={{ 
+                    fontFamily: 'Helvetica, sans-serif',
+                    fontWeight: 400,
+                    fontSize: '16px',
+                    textDecoration: 'underline'
+                  }}
+                >
+                  Вернуться к входу
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -250,119 +530,161 @@ const NewPasswordPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen w-full relative overflow-hidden">
-      {/* Background Container */}
+    <div 
+      className="newpassword-background"
+      style={{ 
+        backgroundColor: '#252525',
+        backgroundImage: `url(${newPasswordBackground})`,
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        margin: 0,
+        padding: 0
+      }}
+    >
+      <style dangerouslySetInnerHTML={{ __html: nebulaStyles }} />
+
+      {/* Logo - в левом верхнем углу как в других страницах */}
       <div 
-        className="fixed inset-0 w-full h-full bg-cover bg-center bg-no-repeat"
+        className="absolute left-20 top-10 z-50 logo-container"
         style={{
-          backgroundImage: `url(${newPasswordBackground})`,
-          backgroundPosition: 'center center',
-          backgroundAttachment: 'fixed',
-          transform: 'scale(1.08)',
-          transformOrigin: 'center center'
+          transform: 'scale(0.8)',
+          transformOrigin: 'left top'
         }}
-      />
-
-      {/* Overlay for better contrast */}
-      <div className="fixed inset-0 bg-black bg-opacity-30" />
-
-      {/* Content Container */}
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
-        <div className="w-full max-w-[576px] mx-auto">
-          {/* Logo Section */}
-          <div 
-            className={`flex items-center justify-center mb-8 transition-all duration-1000 ease-out ${
-              isFormVisible 
-                ? 'opacity-100 translate-y-0' 
-                : 'opacity-0 translate-y-8'
-            }`}
-            style={{ transform: 'scale(0.8)' }}
+      >
+        <div className="flex items-center gap-4">
+          <img 
+            src={logoImage}
+            alt="Logo"
+            className="h-12 sm:h-16 lg:h-20 w-auto object-contain"
+          />
+          <span 
+            className="text-white text-2xl sm:text-3xl lg:text-4xl font-bold"
+            style={{
+              fontFamily: "'gg sans', 'Whitney', 'Helvetica Neue', Helvetica, Arial, sans-serif",
+              fontWeight: 600,
+              letterSpacing: '-0.02em'
+            }}
           >
-            <div className="flex items-center">
-              <img 
-                src={logoImage} 
-                alt="Nebula Logo" 
-                className="w-[50px] h-[50px] mr-3"
-              />
-              <span 
-                className="text-white font-bold text-2xl"
-                style={{ 
-                  fontFamily: 'Helvetica, Arial, sans-serif',
-                  fontWeight: 700
-                }}
-              >
-                Nebula
-              </span>
-            </div>
+            Nebula
+          </span>
+        </div>
+      </div>
+
+      {/* Main Content Container */}
+      <div className="min-h-screen flex items-center justify-center px-4 py-8 lg:px-8 relative z-40 form-container">
+        <div className="w-full max-w-[320px] sm:max-w-[400px] md:max-w-[480px] lg:max-w-[548px] mx-auto">
+          
+          {/* Header */}
+          <div className="text-center mb-14 w-full max-w-[548px] mx-auto">
+            <h1 
+              className="text-white font-bold text-4xl mb-6 relative z-50"
+              style={{ 
+                fontFamily: 'Helvetica, sans-serif',
+                fontWeight: 700
+              }}
+            >
+              Создать новый пароль
+            </h1>
+            <p 
+              className="text-[#ABABAB] text-xl relative z-50"
+              style={{ 
+                fontFamily: 'Helvetica, sans-serif',
+                fontWeight: 400
+              }}
+            >
+              Введите новый надежный пароль. Ваш пароль должен содержать: одну заглавную и одну строчную букву, один специальный символ и минимум 8 символов.
+            </p>
           </div>
 
-          {/* Main Form Card */}
-          <div 
-            className={`transition-all duration-1000 ease-out ${
-              isFormVisible 
-                ? 'opacity-100 translate-y-0' 
-                : 'opacity-0 translate-y-12'
-            }`}
-          >
-            <div className="backdrop-blur-sm bg-black/20 rounded-2xl p-8 border border-white/10">
-              {/* Header Section */}
-              <div className="text-center mb-8">
-                <h1 
-                  className="text-white text-[40px] font-bold mb-4"
-                  style={{ 
-                    fontFamily: 'Helvetica, Arial, sans-serif',
-                    fontWeight: 700,
-                    lineHeight: '1.2'
-                  }}
-                >
-                  Create New Password
-                </h1>
-                <p 
-                  className="text-white/70 text-lg leading-relaxed max-w-md mx-auto"
-                  style={{ 
-                    fontFamily: 'Helvetica, Arial, sans-serif',
-                    fontWeight: 400
-                  }}
-                >
-                  Type your new strong password. Your password must include: One capital letter & one small letter at least, One special character & Minimum 8 digits long.
-                </p>
-              </div>
-
-              {/* Form */}
-              <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-8 sm:space-y-12 lg:space-y-[60px]">
+            
+            {/* Input Fields */}
+            <div className="space-y-6 lg:space-y-[56px]">
+              <div className="space-y-4 lg:space-y-[24px]">
+                
                 {/* Password Field */}
                 <div className="space-y-2">
-                  <div className="relative">
+                  <div className="relative h-14 sm:h-16 lg:h-[66px]">
+                    {/* Main Border Container */}
+                    <div 
+                      className="absolute inset-0 top-1.5 lg:top-[6px] border rounded bg-transparent transition-colors duration-200"
+                      style={{
+                        borderWidth: '1px',
+                        borderColor: errors.password ? '#EF4444' : (focusedField === 'password' ? '#7177FF' : '#ABABAB')
+                      }}
+                    />
+                    
+                    {/* Subtract Effect - Label Background Cut */}
+                    <div 
+                      className="absolute flex items-center justify-center"
+                      style={{
+                        width: '100px',
+                        height: '22px',
+                        left: '12px',
+                        top: '-5px',
+                        background: '#252525',
+                        borderRadius: '4px',
+                        zIndex: 1
+                      }}
+                    >
+                      {/* Label */}
+                      <label 
+                        className="text-[14px] font-normal transition-colors duration-200"
+                        style={{ 
+                          fontFamily: 'Helvetica, sans-serif',
+                          fontWeight: 400,
+                          color: errors.password ? '#EF4444' : (focusedField === 'password' ? '#7177FF' : '#ABABAB')
+                        }}>
+                        Новый пароль
+                      </label>
+                    </div>
+                    
+                    {/* Password Input */}
                     <input
                       type={showPassword ? 'text' : 'password'}
-                      name="password"
-                      placeholder="New Password"
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      className={`w-full h-[60px] px-4 pr-12 bg-transparent border rounded-lg text-white placeholder-white/50 text-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#7177FF] focus:border-transparent ${
-                        errors.password 
-                          ? 'border-red-500 focus:ring-red-500' 
-                          : 'border-white/30 hover:border-white/50'
-                      }`}
+                      placeholder="Введите новый пароль"
+                      className="absolute bg-transparent text-white font-normal border-none outline-none text-left z-20 transition-colors duration-200"
                       style={{ 
-                        fontFamily: 'Helvetica, Arial, sans-serif',
-                        fontWeight: 400
+                        fontFamily: 'Helvetica, sans-serif',
+                        fontWeight: 400,
+                        fontSize: '18px',
+                        left: '18px',
+                        top: '22px',
+                        width: 'calc(100% - 78px)',
+                        height: '24px',
+                        background: 'transparent !important',
+                        WebkitBoxShadow: '0 0 0 1000px transparent inset !important',
+                        WebkitTextFillColor: focusedField === 'password' ? '#FFFFFF !important' : '#ABABAB !important',
+                        caretColor: focusedField === 'password' ? '#7177FF' : '#ABABAB',
+                        color: focusedField === 'password' ? '#FFFFFF !important' : '#ABABAB !important',
+                        boxShadow: '0 0 0 1000px transparent inset !important'
                       }}
+                      value={formData.password}
+                      onChange={(e) => handleInputChange('password', e.target.value)}
+                      onFocus={() => setFocusedField('password')}
+                      onBlur={() => setFocusedField(null)}
                       disabled={isLoading}
                     />
-                    <button
+                    
+                    {/* Eye Icon */}
+                    <button 
                       type="button"
+                      className="absolute w-6 h-6 sm:w-7 sm:h-7 lg:w-[28px] lg:h-[28px] right-3 sm:right-4 lg:right-[16px] top-4 sm:top-5 lg:top-[21px] rounded eye-hover"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-white/60 hover:text-white transition-colors duration-200"
                       disabled={isLoading}
                     >
                       {showPassword ? (
-                        <EyeOff className="w-5 h-5" />
+                        <EyeIcon className="eye-icon w-4 h-4 sm:w-5 sm:h-5 lg:w-[21px] lg:h-[18px] text-[#ABABAB]" />
                       ) : (
-                        <Eye className="w-5 h-5" />
+                        <EyeOffIcon className="eye-icon w-4 h-4 sm:w-5 sm:h-5 lg:w-[21px] lg:h-[18px] text-[#ABABAB]" />
                       )}
                     </button>
                   </div>
+                  
                   {errors.password && (
                     <p className="text-red-400 text-sm mt-1 flex items-center">
                       <span className="w-4 h-4 rounded-full bg-red-400 text-white text-xs flex items-center justify-center mr-2">!</span>
@@ -374,7 +696,7 @@ const NewPasswordPage: React.FC = () => {
                 {/* Password Strength Indicators */}
                 {formData.password && (
                   <div className="space-y-2">
-                    <p className="text-white/70 text-sm font-medium">Password Requirements:</p>
+                    <p className="text-white/70 text-sm font-medium">Требования к паролю:</p>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div className="flex items-center">
                         <div 
@@ -382,7 +704,7 @@ const NewPasswordPage: React.FC = () => {
                           style={{ backgroundColor: getStrengthColor(passwordStrength.hasMinLength) }}
                         />
                         <span style={{ color: getStrengthColor(passwordStrength.hasMinLength) }}>
-                          8+ characters
+                          8+ символов
                         </span>
                       </div>
                       <div className="flex items-center">
@@ -391,7 +713,7 @@ const NewPasswordPage: React.FC = () => {
                           style={{ backgroundColor: getStrengthColor(passwordStrength.hasUpperCase) }}
                         />
                         <span style={{ color: getStrengthColor(passwordStrength.hasUpperCase) }}>
-                          Uppercase letter
+                          Заглавная буква
                         </span>
                       </div>
                       <div className="flex items-center">
@@ -400,7 +722,7 @@ const NewPasswordPage: React.FC = () => {
                           style={{ backgroundColor: getStrengthColor(passwordStrength.hasLowerCase) }}
                         />
                         <span style={{ color: getStrengthColor(passwordStrength.hasLowerCase) }}>
-                          Lowercase letter
+                          Строчная буква
                         </span>
                       </div>
                       <div className="flex items-center">
@@ -409,175 +731,159 @@ const NewPasswordPage: React.FC = () => {
                           style={{ backgroundColor: getStrengthColor(passwordStrength.hasSpecialChar) }}
                         />
                         <span style={{ color: getStrengthColor(passwordStrength.hasSpecialChar) }}>
-                          Special character
+                          Спец. символ
                         </span>
                       </div>
                     </div>
                   </div>
                 )}
+              </div>
 
-                {/* Confirm Password Field */}
-                <div className="space-y-2">
-                  <div className="relative">
-                    <input
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      name="confirmPassword"
-                      placeholder="Confirm New Password"
-                      value={formData.confirmPassword}
-                      onChange={handleInputChange}
-                      className={`w-full h-[60px] px-4 pr-12 bg-transparent border rounded-lg text-white placeholder-white/50 text-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#7177FF] focus:border-transparent ${
-                        errors.confirmPassword 
-                          ? 'border-red-500 focus:ring-red-500' 
-                          : 'border-white/30 hover:border-white/50'
-                      }`}
-                      style={{ 
-                        fontFamily: 'Helvetica, Arial, sans-serif',
-                        fontWeight: 400
-                      }}
-                      disabled={isLoading}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-white/60 hover:text-white transition-colors duration-200"
-                      disabled={isLoading}
-                    >
-                      {showConfirmPassword ? (
-                        <EyeOff className="w-5 h-5" />
-                      ) : (
-                        <Eye className="w-5 h-5" />
-                      )}
-                    </button>
-                  </div>
-                  {errors.confirmPassword && (
-                    <p className="text-red-400 text-sm mt-1 flex items-center">
-                      <span className="w-4 h-4 rounded-full bg-red-400 text-white text-xs flex items-center justify-center mr-2">!</span>
-                      {errors.confirmPassword}
-                    </p>
-                  )}
-                </div>
-
-                {/* General Error */}
-                {errors.general && (
-                  <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-3">
-                    <p className="text-red-400 text-sm flex items-center">
-                      <span className="w-4 h-4 rounded-full bg-red-400 text-white text-xs flex items-center justify-center mr-2">!</span>
-                      {errors.general}
-                    </p>
-                  </div>
-                )}
-
-                {/* Submit Button */}
-                <button
-                  type="submit"
-                  disabled={isLoading || !passwordStrength.isValid || formData.password !== formData.confirmPassword}
-                  className="w-full h-[60px] rounded-lg text-white text-xl font-bold transition-all duration-300 ease-out disabled:opacity-50 disabled:cursor-not-allowed hover:transform hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(113,119,255,0.3)] active:transform active:translate-y-0"
-                  style={{
-                    background: isLoading 
-                      ? 'linear-gradient(135deg, #6B7280 0%, #9CA3AF 100%)'
-                      : 'linear-gradient(135deg, #7177FF 0%, #9B87F5 25%, #E879F9 75%, #F472B6 100%)',
-                    fontFamily: 'Helvetica, Arial, sans-serif',
-                    fontWeight: 700,
-                    boxShadow: '0 4px 15px rgba(113, 119, 255, 0.2)'
-                  }}
-                >
-                  {isLoading ? (
-                    <div className="flex items-center justify-center">
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                        <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                        <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                      </div>
-                    </div>
-                  ) : (
-                    'Confirm Changes'
-                  )}
-                </button>
-
-                {/* Back to Login */}
-                <div className="text-center pt-4">
-                  <button
-                    type="button"
-                    onClick={() => navigate('/login')}
-                    className="text-white/70 hover:text-white text-sm transition-colors duration-200"
-                    style={{ 
-                      fontFamily: 'Helvetica, Arial, sans-serif',
-                      fontWeight: 400
+              {/* Confirm Password Field */}
+              <div className="space-y-2">
+                <div className="relative h-14 sm:h-16 lg:h-[66px]">
+                  {/* Main Border Container */}
+                  <div 
+                    className="absolute inset-0 top-1.5 lg:top-[6px] border rounded bg-transparent transition-colors duration-200"
+                    style={{
+                      borderWidth: '1px',
+                      borderColor: errors.confirmPassword ? '#EF4444' : (focusedField === 'confirmPassword' ? '#7177FF' : '#ABABAB')
                     }}
+                  />
+                  
+                  {/* Subtract Effect - Label Background Cut */}
+                  <div 
+                    className="absolute flex items-center justify-center"
+                    style={{
+                      width: '140px',
+                      height: '22px',
+                      left: '12px',
+                      top: '-5px',
+                      background: '#252525',
+                      borderRadius: '4px',
+                      zIndex: 1
+                    }}
+                  >
+                    {/* Label */}
+                    <label 
+                      className="text-[14px] font-normal transition-colors duration-200"
+                      style={{ 
+                        fontFamily: 'Helvetica, sans-serif',
+                        fontWeight: 400,
+                        color: errors.confirmPassword ? '#EF4444' : (focusedField === 'confirmPassword' ? '#7177FF' : '#ABABAB')
+                      }}>
+                      Подтвердите пароль
+                    </label>
+                  </div>
+                  
+                  {/* Confirm Password Input */}
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    placeholder="Повторите новый пароль"
+                    className="absolute bg-transparent text-white font-normal border-none outline-none text-left z-20 transition-colors duration-200"
+                    style={{ 
+                      fontFamily: 'Helvetica, sans-serif',
+                      fontWeight: 400,
+                      fontSize: '18px',
+                      left: '18px',
+                      top: '22px',
+                      width: 'calc(100% - 78px)',
+                      height: '24px',
+                      background: 'transparent !important',
+                      WebkitBoxShadow: '0 0 0 1000px transparent inset !important',
+                      WebkitTextFillColor: focusedField === 'confirmPassword' ? '#FFFFFF !important' : '#ABABAB !important',
+                      caretColor: focusedField === 'confirmPassword' ? '#7177FF' : '#ABABAB',
+                      color: focusedField === 'confirmPassword' ? '#FFFFFF !important' : '#ABABAB !important',
+                      boxShadow: '0 0 0 1000px transparent inset !important'
+                    }}
+                    value={formData.confirmPassword}
+                    onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                    onFocus={() => setFocusedField('confirmPassword')}
+                    onBlur={() => setFocusedField(null)}
+                    disabled={isLoading}
+                  />
+                  
+                  {/* Eye Icon */}
+                  <button 
+                    type="button"
+                    className="absolute w-6 h-6 sm:w-7 sm:h-7 lg:w-[28px] lg:h-[28px] right-3 sm:right-4 lg:right-[16px] top-4 sm:top-5 lg:top-[21px] rounded eye-hover"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     disabled={isLoading}
                   >
-                    Back to Login
+                    {showConfirmPassword ? (
+                      <EyeIcon className="eye-icon w-4 h-4 sm:w-5 sm:h-5 lg:w-[21px] lg:h-[18px] text-[#ABABAB]" />
+                    ) : (
+                      <EyeOffIcon className="eye-icon w-4 h-4 sm:w-5 sm:h-5 lg:w-[21px] lg:h-[18px] text-[#ABABAB]" />
+                    )}
                   </button>
                 </div>
-              </form>
+                
+                {errors.confirmPassword && (
+                  <p className="text-red-400 text-sm mt-1 flex items-center">
+                    <span className="w-4 h-4 rounded-full bg-red-400 text-white text-xs flex items-center justify-center mr-2">!</span>
+                    {errors.confirmPassword}
+                  </p>
+                )}
+              </div>
+
+              {/* General Error */}
+              {errors.general && (
+                <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-3">
+                  <p className="text-red-400 text-sm flex items-center">
+                    <span className="w-4 h-4 rounded-full bg-red-400 text-white text-xs flex items-center justify-center mr-2">!</span>
+                    {errors.general}
+                  </p>
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isLoading || !passwordStrength.isValid || formData.password !== formData.confirmPassword}
+                className="create-password-button w-full h-12 sm:h-14 lg:h-[60px] text-white font-bold text-base sm:text-lg md:text-xl lg:text-[24px] rounded transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  background: isLoading 
+                    ? 'linear-gradient(135deg, #6B7280 0%, #9CA3AF 100%)'
+                    : 'linear-gradient(90.67deg, #F6B8FD -7.12%, #316AD7 114.37%)',
+                  fontFamily: 'Helvetica, sans-serif',
+                  fontWeight: 700,
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                {isLoading ? (
+                  <div className="loading-dots">
+                    <div className="loading-dot"></div>
+                    <div className="loading-dot"></div>
+                    <div className="loading-dot"></div>
+                  </div>
+                ) : (
+                  'Подтвердить изменения'
+                )}
+              </button>
+
+              {/* Back to Login */}
+              <div className="text-center pt-4">
+                <button
+                  type="button"
+                  onClick={() => navigate('/login')}
+                  className="text-[#ABABAB] hover:text-gray-300 transition-colors py-2"
+                  style={{ 
+                    fontFamily: 'Helvetica, sans-serif',
+                    fontWeight: 400,
+                    fontSize: '16px',
+                    textDecoration: 'underline'
+                  }}
+                  disabled={isLoading}
+                >
+                  Вернуться к входу
+                </button>
+              </div>
             </div>
-          </div>
+          </form>
         </div>
       </div>
-
-      {/* Responsive Styles */}
-      <style dangerouslySetInnerHTML={{
-        __html: `
-          @media (max-width: 640px) {
-            .backdrop-blur-sm {
-              margin: 1rem;
-              padding: 1.5rem;
-            }
-          }
-
-          @media (min-width: 641px) and (max-width: 1024px) {
-            .fixed.inset-0 {
-              background-position: center center !important;
-              background-attachment: scroll !important;
-              transform: scale(1.1) !important;
-            }
-          }
-
-          @media (min-width: 1025px) and (max-width: 1440px) {
-            .fixed.inset-0 {
-              background-position: center center !important;
-              background-attachment: fixed !important;
-              transform: scale(1.08) !important;
-            }
-          }
-
-          @media (min-width: 1441px) and (max-width: 1920px) {
-            .fixed.inset-0 {
-              background-position: center center !important;
-              transform: scale(1.05) !important;
-            }
-          }
-
-          @media (min-width: 1921px) {
-            .fixed.inset-0 {
-              background-size: cover !important;
-              background-position: center center !important;
-              transform: scale(1.02) !important;
-            }
-          }
-
-          @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-            .fixed.inset-0 {
-              transform: scale(1.06) !important;
-            }
-          }
-
-          input:-webkit-autofill,
-          input:-webkit-autofill:hover,
-          input:-webkit-autofill:focus {
-            -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
-            -webkit-text-fill-color: white !important;
-            transition: background-color 5000s ease-in-out 0s;
-          }
-
-          input[type="password"]::-ms-reveal,
-          input[type="password"]::-ms-clear {
-            display: none;
-          }
-        `
-      }} />
     </div>
   );
-};
-
-export default NewPasswordPage;
+}

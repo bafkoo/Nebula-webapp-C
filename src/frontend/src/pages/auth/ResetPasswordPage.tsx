@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import resetPasswordBackground from '../../assets/auth/resetPassword/backgrounds/resetPasswordBackground.png';
 import logoImage from '../../assets/auth/login/logos/logo (2).png';
 
@@ -12,8 +13,9 @@ export default function ResetPasswordPage(): React.JSX.Element {
   // Состояние для анимации появления
   const [isVisible, setIsVisible] = useState(false);
 
-  // Навигация
+  // Навигация и Auth
   const navigate = useNavigate();
+  const { resetPassword } = useAuth();
 
   // Анимация появления
   useEffect(() => {
@@ -29,12 +31,13 @@ export default function ResetPasswordPage(): React.JSX.Element {
 
     setIsLoading(true);
     
-    // Simulate API call
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await resetPassword(email);
       setIsSuccess(true);
     } catch (error) {
       console.error('Reset password error:', error);
+      // В случае ошибки все равно показываем success для безопасности
+      setIsSuccess(true);
     } finally {
       setIsLoading(false);
     }

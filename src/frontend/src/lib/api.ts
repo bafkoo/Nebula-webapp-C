@@ -10,6 +10,15 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  newPassword: string;
+}
+
 export interface UserDto {
   id: string;
   username: string;
@@ -23,6 +32,11 @@ export interface AuthResponse {
   message: string;
   user?: UserDto;
   token?: string;
+}
+
+export interface ApiResponse {
+  success: boolean;
+  message: string;
 }
 
 // Утилиты для работы с токенами
@@ -150,6 +164,20 @@ class ApiClient {
   async logout(): Promise<void> {
     TokenManager.removeToken();
     // В будущем можно добавить вызов API для инвалидации токена на сервере
+  }
+
+  async forgotPassword(data: ForgotPasswordRequest): Promise<ApiResponse> {
+    return this.request<ApiResponse>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async resetPassword(data: ResetPasswordRequest): Promise<ApiResponse> {
+    return this.request<ApiResponse>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 
   // Метод для получения профиля (будет полезен для защищенных эндпоинтов)

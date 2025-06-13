@@ -142,4 +142,58 @@ public class AuthController : ControllerBase
             Token = token
         });
     }
+
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest request)
+    {
+        // Находим пользователя по email
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+        if (user == null)
+        {
+            // Не раскрываем информацию о том, существует ли пользователь
+            return Ok(new { Success = true, Message = "Если пользователь с таким email существует, письмо для сброса пароля было отправлено" });
+        }
+
+        // Генерируем токен сброса пароля
+        var resetToken = Guid.NewGuid().ToString();
+        user.PasswordResetToken = resetToken;
+        user.PasswordResetTokenExpiry = DateTime.UtcNow.AddHours(1); // Токен действует 1 час
+
+        await _context.SaveChangesAsync();
+
+        // Отправляем email с ссылкой для сброса пароля
+        try
+        {
+            await _emailService.SendPasswordResetEmailAsync(user.Email, user.Username, resetToken);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error sending password reset email: {ex.Message}");
+        }
+
+        return Ok(new { Success = true, Message = "Если пользователь с таким email существует, письмо для сброса пароля было отправлено" });
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword(ResetPasswordRequest request)
+    {
+        // Находим пользователя по токену сброса пароля
+        var user = await _context.Users.FirstOrDefaultAsync(u => 
+            u.PasswordResetToken == request.Token && 
+            u.PasswordResetTokenExpiry > DateTime.UtcNow);
+
+        if (user == null)
+        {
+            return BadRequest(new { Success = false, Message = "Неверный или истекший токен сброса пароля" });
+        }
+
+        // Обновляем пароль
+        user.PasswordHash = _passwordService.HashPassword(request.NewPassword);
+        user.PasswordResetToken = null;
+        user.PasswordResetTokenExpiry = null;
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new { Success = true, Message = "Пароль успешно изменен" });
+    }
 } 

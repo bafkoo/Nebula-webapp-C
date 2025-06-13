@@ -97,7 +97,7 @@ public class EmailService : IEmailService
             var fromEmail = _configuration["Resend:FromEmail"] ?? "onboarding@resend.dev";
             var fromName = _configuration["Resend:FromName"] ?? "Nebula";
             
-            var resetUrl = $"{_configuration["Frontend:BaseUrl"]}/auth/reset-password?token={resetToken}";
+            var resetUrl = $"{_configuration["Frontend:BaseUrl"]}/new-password?token={resetToken}";
 
             var htmlContent = $@"
                 <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>
