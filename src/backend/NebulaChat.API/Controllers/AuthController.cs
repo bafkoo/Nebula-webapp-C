@@ -14,12 +14,14 @@ public class AuthController : ControllerBase
     private readonly NebulaChatDbContext _context;
     private readonly IPasswordService _passwordService;
     private readonly IJwtService _jwtService;
+    private readonly IEmailService _emailService;
 
-    public AuthController(NebulaChatDbContext context, IPasswordService passwordService, IJwtService jwtService)
+    public AuthController(NebulaChatDbContext context, IPasswordService passwordService, IJwtService jwtService, IEmailService emailService)
     {
         _context = context;
         _passwordService = passwordService;
         _jwtService = jwtService;
+        _emailService = emailService;
     }
 
     [HttpPost("register")]
@@ -45,6 +47,9 @@ public class AuthController : ControllerBase
             });
         }
 
+        // Генерируем 6-значный код подтверждения
+        var verificationCode = new Random().Next(100000, 999999).ToString();
+
         // Создаем нового пользователя
         var user = new User
         {
@@ -53,12 +58,24 @@ public class AuthController : ControllerBase
             Email = request.Email,
             PasswordHash = _passwordService.HashPassword(request.Password),
             IsEmailVerified = false,
-            EmailVerificationToken = Guid.NewGuid().ToString(),
+            EmailVerificationToken = verificationCode,
             EmailVerificationTokenExpiry = DateTime.UtcNow.AddDays(1)
         };
 
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
+
+        // Отправляем email с кодом подтверждения
+        try
+        {
+            await _emailService.SendVerificationEmailAsync(user.Email, user.Username, verificationCode);
+        }
+        catch (Exception ex)
+        {
+            // Логируем ошибку, но не возвращаем ошибку пользователю
+            // так как аккаунт уже создан
+            Console.WriteLine($"Error sending email: {ex.Message}");
+        }
 
         // Генерируем JWT токен
         var token = _jwtService.GenerateAccessToken(user);

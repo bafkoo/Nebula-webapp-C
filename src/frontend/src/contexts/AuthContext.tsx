@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { User, AuthState, AuthContextType } from './types';
-import { apiClient } from '../lib/api';
+import { apiClient, TokenManager } from '../lib/api';
 
 // Контекст
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -27,41 +27,44 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     pendingVerificationEmail: null
   });
 
-  // Проверяем сохраненное состояние при загрузке
+  // Проверяем JWT токен при загрузке
   useEffect(() => {
     const checkAuthState = () => {
       try {
-        const savedUser = localStorage.getItem('user');
-        const savedToken = localStorage.getItem('accessToken');
-        const pendingEmail = localStorage.getItem('pendingVerificationEmail');
-
-        if (savedUser && savedToken) {
-          const user = JSON.parse(savedUser);
+        const isAuth = TokenManager.isAuthenticated();
+        const user = TokenManager.getUser();
+        
+        if (isAuth && user) {
           setAuthState({
-            user,
-            isAuthenticated: user.isEmailVerified,
+            user: {
+              id: user.id,
+              email: user.email,
+              username: user.username,
+              isEmailVerified: user.isEmailVerified
+            },
+            isAuthenticated: true,
             isLoading: false,
             pendingVerificationEmail: user.isEmailVerified ? null : user.email
           });
-        } else if (pendingEmail) {
+        } else {
+          // Очищаем устаревшие токены
+          TokenManager.removeToken();
           setAuthState({
             user: null,
             isAuthenticated: false,
             isLoading: false,
-            pendingVerificationEmail: pendingEmail
+            pendingVerificationEmail: null
           });
-        } else {
-          setAuthState(prev => ({
-            ...prev,
-            isLoading: false
-          }));
         }
       } catch (error) {
         console.error('Error checking auth state:', error);
-        setAuthState(prev => ({
-          ...prev,
-          isLoading: false
-        }));
+        TokenManager.removeToken();
+        setAuthState({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+          pendingVerificationEmail: null
+        });
       }
     };
 
@@ -73,7 +76,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true }));
 
-      // Реальный API вызов
+      // API автоматически сохранит токен через TokenManager
       const response = await apiClient.login({ email, password });
 
       if (!response.success || !response.user) {
@@ -87,16 +90,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         isEmailVerified: response.user.isEmailVerified
       };
 
-      // Сохраняем в localStorage
-      localStorage.setItem('user', JSON.stringify(user));
-      if (response.token) {
-        localStorage.setItem('accessToken', response.token);
-      }
-      localStorage.removeItem('pendingVerificationEmail');
-
       setAuthState({
         user,
-        isAuthenticated: user.isEmailVerified,
+        isAuthenticated: true, // JWT автоматически валидируется
         isLoading: false,
         pendingVerificationEmail: user.isEmailVerified ? null : user.email
       });
@@ -112,20 +108,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setAuthState(prev => ({ ...prev, isLoading: true }));
     
     try {
-      // Реальный API вызов
+      // API автоматически сохранит токен через TokenManager
       const response = await apiClient.register(userData);
       
-      if (!response.success) {
+      if (!response.success || !response.user) {
         throw new Error(response.message || 'Ошибка при регистрации');
       }
       
-      // После успешной регистрации сохраняем email для верификации
-      localStorage.setItem('pendingVerificationEmail', userData.email);
+      const user: User = {
+        id: response.user.id,
+        email: response.user.email,
+        username: response.user.username,
+        isEmailVerified: response.user.isEmailVerified
+      };
+
       setAuthState({
-        user: null,
-        isAuthenticated: false,
+        user,
+        isAuthenticated: true, // После регистрации пользователь сразу авторизован
         isLoading: false,
-        pendingVerificationEmail: userData.email
+        pendingVerificationEmail: user.isEmailVerified ? null : user.email
       });
       
     } catch (error) {
@@ -140,32 +141,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setAuthState(prev => ({ ...prev, isLoading: true }));
     
     try {
-      // TODO: Добавить реальный API вызов для верификации email
+      // TODO: Добавить реальный API эндпоинт для верификации email
       // const response = await apiClient.verifyEmail({ code });
       
       // Временная симуляция - заменить на реальный API
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Получаем сохраненные данные регистрации
-      const email = authState.pendingVerificationEmail || '';
-      const username = email.split('@')[0]; // Временно, пока нет API
-      
-      const user: User = {
-        id: '1',
-        username: username,
-        email: email,
-        isEmailVerified: true
-      };
-      
-      localStorage.setItem('user', JSON.stringify(user));
-      localStorage.removeItem('pendingVerificationEmail');
-      
-      setAuthState({
-        user,
-        isAuthenticated: true,
-        isLoading: false,
-        pendingVerificationEmail: null
-      });
+      // Обновляем пользователя как верифицированного
+      const currentUser = authState.user;
+      if (currentUser) {
+        const updatedUser: User = {
+          ...currentUser,
+          isEmailVerified: true
+        };
+        
+        // Обновляем в TokenManager
+        const userDto = {
+          id: updatedUser.id,
+          username: updatedUser.username,
+          email: updatedUser.email,
+          isEmailVerified: true,
+          createdAt: new Date().toISOString()
+        };
+        TokenManager.setUser(userDto);
+        
+        setAuthState({
+          user: updatedUser,
+          isAuthenticated: true,
+          isLoading: false,
+          pendingVerificationEmail: null
+        });
+      }
       
     } catch (error) {
       setAuthState(prev => ({ ...prev, isLoading: false }));
@@ -186,9 +192,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('pendingVerificationEmail');
+    // Используем метод API клиента который очищает TokenManager
+    apiClient.logout();
     
     setAuthState({
       user: null,

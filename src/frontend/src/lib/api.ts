@@ -25,6 +25,48 @@ export interface AuthResponse {
   token?: string;
 }
 
+// Утилиты для работы с токенами
+export class TokenManager {
+  private static readonly TOKEN_KEY = 'nebula_token';
+  private static readonly USER_KEY = 'nebula_user';
+
+  static setToken(token: string): void {
+    localStorage.setItem(this.TOKEN_KEY, token);
+  }
+
+  static getToken(): string | null {
+    return localStorage.getItem(this.TOKEN_KEY);
+  }
+
+  static removeToken(): void {
+    localStorage.removeItem(this.TOKEN_KEY);
+    localStorage.removeItem(this.USER_KEY);
+  }
+
+  static setUser(user: UserDto): void {
+    localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+  }
+
+  static getUser(): UserDto | null {
+    const userStr = localStorage.getItem(this.USER_KEY);
+    return userStr ? JSON.parse(userStr) : null;
+  }
+
+  static isTokenExpired(token: string): boolean {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.exp * 1000 < Date.now();
+    } catch {
+      return true;
+    }
+  }
+
+  static isAuthenticated(): boolean {
+    const token = this.getToken();
+    return token !== null && !this.isTokenExpired(token);
+  }
+}
+
 // API клиент
 const API_BASE_URL = 'http://localhost:5000/api';
 
@@ -41,15 +83,31 @@ class ApiClient {
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     
+    // Автоматически добавляем JWT токен к запросам
+    const token = TokenManager.getToken();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...options.headers as Record<string, string>,
+    };
+
+    if (token && TokenManager.isAuthenticated()) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
     const config: RequestInit = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+      headers,
       ...options,
     };
 
     const response = await fetch(url, config);
+    
+    // Если токен истек, очищаем локальное хранилище
+    if (response.status === 401) {
+      TokenManager.removeToken();
+      // Можно добавить редирект на страницу логина
+      window.location.href = '/auth/login';
+      return Promise.reject(new Error('Сессия истекла'));
+    }
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Network error' }));
@@ -60,17 +118,43 @@ class ApiClient {
   }
 
   async register(data: RegisterRequest): Promise<AuthResponse> {
-    return this.request<AuthResponse>('/auth/register', {
+    const response = await this.request<AuthResponse>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(data),
     });
+
+    // Автоматически сохраняем токен и пользователя при успешной регистрации
+    if (response.success && response.token && response.user) {
+      TokenManager.setToken(response.token);
+      TokenManager.setUser(response.user);
+    }
+
+    return response;
   }
 
   async login(data: LoginRequest): Promise<AuthResponse> {
-    return this.request<AuthResponse>('/auth/login', {
+    const response = await this.request<AuthResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(data),
     });
+
+    // Автоматически сохраняем токен и пользователя при успешном логине
+    if (response.success && response.token && response.user) {
+      TokenManager.setToken(response.token);
+      TokenManager.setUser(response.user);
+    }
+
+    return response;
+  }
+
+  async logout(): Promise<void> {
+    TokenManager.removeToken();
+    // В будущем можно добавить вызов API для инвалидации токена на сервере
+  }
+
+  // Метод для получения профиля (будет полезен для защищенных эндпоинтов)
+  async getProfile(): Promise<UserDto> {
+    return this.request<UserDto>('/user/profile');
   }
 }
 
