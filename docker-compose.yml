@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: nebula-postgres
+    environment:
+      POSTGRES_DB: nebulachat
+      POSTGRES_USER: nebula
+      POSTGRES_PASSWORD: nebula123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - nebula-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nebula -d nebulachat"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: nebula-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - nebula-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  api:
+    build:
+      context: ./src/backend
+      dockerfile: Dockerfile
+    container_name: nebula-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=nebulachat;Username=nebula;Password=nebula123
+      - ConnectionStrings__Redis=redis:6379
+      - JWT__Secret=your-super-secret-jwt-key-that-should-be-at-least-256-bits-long
+      - JWT__Issuer=NebulaChat
+      - JWT__Audience=NebulaChat
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - nebula-network
+    restart: unless-stopped
+
+  # Frontend
+  frontend:
+    build:
+      context: ./src/frontend
+      dockerfile: Dockerfile
+    container_name: nebula-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    networks:
+      - nebula-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  nebula-network:
+    driver: bridge 
