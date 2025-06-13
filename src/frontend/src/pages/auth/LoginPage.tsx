@@ -1,6 +1,7 @@
 import { CheckIcon, EyeIcon } from "lucide-react";
 import React from "react";
 import gradientMainBg from "../../assets/auth/login/backgrounds/gradient-main.webp";
+import logoImage from "../../assets/auth/login/logos/logo (2).png";
 
 export default function LoginPage(): React.JSX.Element {
   return (
@@ -19,25 +20,28 @@ export default function LoginPage(): React.JSX.Element {
 
       {/* Logo - с большим эффектом отдаления */}
       <div 
-        className="absolute left-4 sm:left-6 lg:left-20 top-4 sm:top-6 lg:top-12 z-50"
+        className="absolute left-20 top-10 z-50"
         style={{
           transform: 'scale(0.8)', // больше отдаление как у остального интерфейса
           transformOrigin: 'left top'
         }}
       >
-        <div className="relative flex items-center gap-1 sm:gap-2 lg:gap-[5px]">
-          {/* Ellipse */}
-          <div 
-            className="w-4 h-4 sm:w-5 sm:h-5 lg:w-[18px] lg:h-[18px] bg-white rounded-full"
+        <div className="flex items-center gap-4">
+          <img 
+            src={logoImage}
+            alt="Logo"
+            className="h-12 sm:h-16 lg:h-20 w-auto object-contain"
           />
-          {/* Polygon */}
-          <div 
-            className="w-4 h-4 sm:w-5 sm:h-5 lg:w-[25px] lg:h-[25px] bg-white"
-            style={{ 
-              clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)',
-              transform: 'rotate(-89.93deg)' 
+          <span 
+            className="text-white text-2xl sm:text-3xl lg:text-4xl font-bold"
+            style={{
+              fontFamily: "'gg sans', 'Whitney', 'Helvetica Neue', Helvetica, Arial, sans-serif",
+              fontWeight: 600,
+              letterSpacing: '-0.02em'
             }}
-          />
+          >
+            Nebula
+          </span>
         </div>
       </div>
 
