@@ -1,6 +1,7 @@
 import { CheckIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 import gradientMainBg from "../../assets/auth/login/backgrounds/gradient-main.webp";
 import logoImage from "../../assets/auth/login/logos/logo (2).png";
 
@@ -24,8 +25,9 @@ export default function LoginPage(): React.JSX.Element {
   // Состояние для анимаций
   const [isVisible, setIsVisible] = useState(false);
 
-  // Навигация
+  // Навигация и Auth
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   // Анимация появления
   useEffect(() => {
@@ -237,13 +239,15 @@ export default function LoginPage(): React.JSX.Element {
     e.preventDefault();
     setIsLoading(true);
     
-    // Имитация отправки формы
     try {
-      console.log('Отправка формы:', formData);
-      // Здесь будет реальная логика авторизации
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Имитация задержки
+      // Используем функцию login из AuthContext
+      await login(formData.email, formData.password);
+      
+      // После успешного входа перенаправляем в приложение
+      navigate('/app');
     } catch (error) {
-      console.log('Ошибка входа:', error);
+      console.error('Login error:', error);
+      // В будущем здесь можно добавить отображение ошибок пользователю
     } finally {
       setIsLoading(false);
     }

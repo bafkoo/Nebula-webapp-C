@@ -289,7 +289,7 @@ export default function ResetPasswordPage(): React.JSX.Element {
                   lineHeight: '1.3'
                 }}
               >
-                We've sent a password reset link to {email}. Please check your email and follow the instructions.
+                We've sent a password reset link to {email}. Click the link in the email to create a new password.
               </p>
 
               <div className="space-y-4 pt-4">

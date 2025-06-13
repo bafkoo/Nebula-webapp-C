@@ -1,0 +1,27 @@
+// Типы для аутентификации
+export interface User {
+  id: string;
+  username: string;
+  email: string;
+  isEmailVerified: boolean;
+}
+
+export interface AuthState {
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  pendingVerificationEmail: string | null;
+}
+
+export interface AuthContextType {
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  pendingVerificationEmail: string | null;
+  login: (email: string, password: string) => Promise<void>;
+  register: (userData: { username: string; email: string; password: string }) => Promise<void>;
+  logout: () => void;
+  verifyEmail: (code: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  updatePassword: (token: string, newPassword: string) => Promise<void>;
+} 

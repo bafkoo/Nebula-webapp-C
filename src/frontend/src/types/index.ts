@@ -164,7 +164,7 @@ export interface ChatEvent {
   type: 'message' | 'user_typing' | 'user_status';
   channelId?: string;
   userId?: string;
-  data: any;
+  data: unknown;
 }
 
 // UI Component props

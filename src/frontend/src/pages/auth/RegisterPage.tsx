@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { CheckIcon, EyeIcon, EyeOffIcon } from 'lucide-react';
 import backGroundRegister from '../../assets/auth/register/backgrounds/backGroundRegister.png';
 import logoImage from '../../assets/auth/login/logos/logo (2).png';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface FormData {
-  fullName: string;
+  username: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -14,7 +15,7 @@ interface FormData {
 
 export default function RegisterPage(): React.JSX.Element {
   const [formData, setFormData] = useState<FormData>({
-    fullName: '',
+    username: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -31,8 +32,9 @@ export default function RegisterPage(): React.JSX.Element {
   // Состояние для анимации появления
   const [isVisible, setIsVisible] = useState(false);
 
-  // Навигация
+  // Навигация и Auth
   const navigate = useNavigate();
+  const { register } = useAuth();
 
   // Анимация появления
   useEffect(() => {
@@ -50,11 +52,23 @@ export default function RegisterPage(): React.JSX.Element {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    setIsLoading(false);
-    console.log('Registration submitted:', formData);
+    try {
+      // Используем функцию register из AuthContext
+      await register({
+        username: formData.username,
+        email: formData.email,
+        password: formData.password
+      });
+      
+      // После успешной регистрации пользователь автоматически будет перенаправлен
+      // на страницу верификации через ProtectedRoute логику
+      navigate('/verification');
+    } catch (error) {
+      console.error('Registration error:', error);
+      // Здесь можно добавить обработку ошибок регистрации
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSocialLogin = (provider: string) => {
@@ -423,28 +437,28 @@ export default function RegisterPage(): React.JSX.Element {
           <form onSubmit={handleSubmit} className="space-y-5 lg:space-y-6">
             <div className="space-y-4 lg:space-y-5">
               
-              {/* Full Name Field */}
+              {/* Username Field */}
               <div className="relative">
                 <div 
                   className="absolute top-0 left-4 px-1 text-xs font-normal z-10 transition-colors duration-200"
                   style={{
                     backgroundColor: '#252525',
-                    color: focusedField === 'fullName' ? '#7177FF' : '#ABABAB',
+                    color: focusedField === 'username' ? '#7177FF' : '#ABABAB',
                     fontFamily: 'Helvetica, sans-serif',
                     transform: 'translateY(-50%)'
                   }}
                 >
-                  Full Name
+                  Username
                 </div>
                 <input
                   type="text"
-                  value={formData.fullName}
-                  onChange={(e) => handleInputChange('fullName', e.target.value)}
-                  onFocus={() => setFocusedField('fullName')}
+                  value={formData.username}
+                  onChange={(e) => handleInputChange('username', e.target.value)}
+                  onFocus={() => setFocusedField('username')}
                   onBlur={() => setFocusedField(null)}
                   className="form-input w-full h-12 sm:h-14 lg:h-[60px] bg-transparent text-white border rounded px-4 py-3 text-base sm:text-lg lg:text-[18px] outline-none transition-colors duration-200"
                   style={{
-                    borderColor: focusedField === 'fullName' ? '#7177FF' : '#4D4D4D',
+                    borderColor: focusedField === 'username' ? '#7177FF' : '#4D4D4D',
                     borderWidth: '1px',
                     borderRadius: '8px',
                     fontFamily: 'Helvetica, sans-serif',
