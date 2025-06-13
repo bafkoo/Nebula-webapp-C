@@ -1,9 +1,57 @@
-import { CheckIcon, EyeIcon } from "lucide-react";
-import React from "react";
+import { CheckIcon, EyeIcon, EyeOffIcon } from "lucide-react";
+import React, { useState } from "react";
 import gradientMainBg from "../../assets/auth/login/backgrounds/gradient-main.webp";
 import logoImage from "../../assets/auth/login/logos/logo (2).png";
 
 export default function LoginPage(): React.JSX.Element {
+  // Состояние формы
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    rememberMe: true
+  });
+  
+  // Состояние для показа/скрытия пароля
+  const [showPassword, setShowPassword] = useState(false);
+  
+  // Состояние загрузки
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Обработчики событий
+  const handleInputChange = (field: string, value: string | boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    // Имитация отправки формы
+    try {
+      console.log('Отправка формы:', formData);
+      // Здесь будет реальная логика авторизации
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Имитация задержки
+      alert('Успешный вход!');
+    } catch (error) {
+      alert('Ошибка входа!');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSocialLogin = (provider: string) => {
+    console.log(`Вход через ${provider}`);
+    // Здесь будет логика OAuth
+  };
+
+  const handleForgotPassword = () => {
+    console.log('Восстановление пароля');
+    // Здесь будет переход на страницу восстановления
+  };
+
   return (
     <div className="relative min-h-screen w-full bg-[#252525] overflow-hidden">
       {/* Background with texture overlay */}
@@ -66,7 +114,7 @@ export default function LoginPage(): React.JSX.Element {
           </div>
 
           {/* Form Container */}
-          <div className="space-y-8 sm:space-y-12 lg:space-y-[60px]">
+          <form onSubmit={handleSubmit} className="space-y-8 sm:space-y-12 lg:space-y-[60px]">
             
             {/* Input Fields */}
             <div className="space-y-6 lg:space-y-[56px]">
@@ -85,33 +133,54 @@ export default function LoginPage(): React.JSX.Element {
                   
                   {/* Subtract Effect - Label Background Cut */}
                   <div 
-                    className="absolute h-5 sm:h-5 lg:h-[22px] left-3 lg:left-[12px] -top-2 lg:top-[-5px] bg-[#252525] rounded-sm"
+                    className="absolute flex items-center justify-center"
                     style={{
                       width: '133px',
-                      backgroundColor: '#252525',
+                      height: '22px',
+                      left: '12px',
+                      top: '-5px',
+                      background: '#7177FF',
+                      borderRadius: '4px',
                       zIndex: 1
                     }}
-                  />
-                  
-                  {/* Label */}
-                  <label 
-                    className="absolute left-4 sm:left-4 lg:left-[18px] -top-1 lg:top-0 text-[#ABABAB] text-xs sm:text-sm lg:text-[14px] font-normal z-10"
-                    style={{ 
-                      fontFamily: 'Helvetica, sans-serif',
-                      fontWeight: 400
-                    }}>
-                    Username or Email
-                  </label>
+                  >
+                    {/* Label */}
+                    <label 
+                      className="text-[#ABABAB] text-[14px] font-normal"
+                      style={{ 
+                        fontFamily: 'Helvetica, sans-serif',
+                        fontWeight: 400
+                      }}>
+                      Username or Email
+                    </label>
+                  </div>
                   
                   {/* Email Value */}
-                  <div 
+                  {/* <div 
                     className="absolute left-4 sm:left-4 lg:left-[18px] top-5 sm:top-6 lg:top-[28px] text-white text-base sm:text-lg md:text-xl lg:text-[22px] font-bold z-10"
                     style={{ 
                       fontFamily: 'Helvetica, sans-serif',
                       fontWeight: 700
                     }}>
                     muffinworks@gmail.com
-                  </div>
+                  </div> */}
+
+                  {/* Интерактивное поле email (скрытое) */}
+                  <input
+                    type="email"
+                    className="absolute bg-transparent text-white font-bold border-none outline-none text-left z-20"
+                    style={{ 
+                      fontFamily: 'Helvetica, sans-serif',
+                      fontWeight: 700,
+                      fontSize: '22px',
+                      left: '18px',
+                      top: '22px',
+                      right: '18px',
+                      bottom: '22px'
+                    }}
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                  />
                 </div>
 
                 {/* Password Section */}
@@ -127,18 +196,24 @@ export default function LoginPage(): React.JSX.Element {
                   
                   {/* Password Input */}
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     placeholder="Password"
-                    className="absolute left-4 sm:left-4 lg:left-[18px] top-3 sm:top-4 lg:top-[23px] bg-transparent text-[#ABABAB] text-sm sm:text-base lg:text-[18px] font-normal border-none outline-none w-[calc(100%-4rem)]"
+                    className="absolute left-1/2 top-3 sm:top-4 lg:top-[16px] transform -translate-x-1/2 bg-transparent text-[#ABABAB] font-normal border-none outline-none w-[calc(100%-4rem)] text-left"
                     style={{ 
                       fontFamily: 'Helvetica, sans-serif',
-                      fontWeight: 400
+                      fontWeight: 400,
+                      fontSize: '22px'
                     }}
+                    value={formData.password}
+                    onChange={(e) => handleInputChange('password', e.target.value)}
                   />
                   
                   {/* Eye Icon */}
-                  <button className="absolute w-6 h-6 sm:w-7 sm:h-7 lg:w-[28px] lg:h-[28px] right-3 sm:right-4 lg:right-[16px] top-3 sm:top-4 lg:top-[16px] rounded">
-                    <EyeIcon className="w-4 h-4 sm:w-5 sm:h-5 lg:w-[21px] lg:h-[18px] text-[#ABABAB]" />
+                  <button 
+                    className="absolute w-6 h-6 sm:w-7 sm:h-7 lg:w-[28px] lg:h-[28px] right-3 sm:right-4 lg:right-[16px] top-3 sm:top-4 lg:top-[16px] rounded"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeIcon className="w-4 h-4 sm:w-5 sm:h-5 lg:w-[21px] lg:h-[18px] text-[#ABABAB]" /> : <EyeOffIcon className="w-4 h-4 sm:w-5 sm:h-5 lg:w-[21px] lg:h-[18px] text-[#ABABAB]" />}
                   </button>
 
                   {/* Remember me section */}
@@ -146,21 +221,25 @@ export default function LoginPage(): React.JSX.Element {
                     <div className="flex items-center gap-2 sm:gap-3">
                       {/* Custom Checkbox */}
                       <div 
-                        className="flex items-center justify-center rounded border-0"
+                        className="flex items-center justify-center rounded border-0 cursor-pointer"
                         style={{
                           width: '24px',
                           height: '24px',
-                          background: '#7177FF',
+                          background: formData.rememberMe ? '#7177FF' : 'transparent',
+                          border: formData.rememberMe ? 'none' : '2px solid #4D4D4D',
                           borderRadius: '4px'
                         }}
+                        onClick={() => handleInputChange('rememberMe', !formData.rememberMe)}
                       >
-                        <CheckIcon 
-                          className="text-white"
-                          style={{
-                            width: '18px',
-                            height: '18px'
-                          }}
-                        />
+                        {formData.rememberMe && (
+                          <CheckIcon 
+                            className="text-white"
+                            style={{
+                              width: '18px',
+                              height: '18px'
+                            }}
+                          />
+                        )}
                       </div>
                       <label 
                         className="text-[#ABABAB] font-normal cursor-pointer" 
@@ -168,7 +247,9 @@ export default function LoginPage(): React.JSX.Element {
                           fontFamily: 'Helvetica, sans-serif',
                           fontWeight: 400,
                           fontSize: '18px'
-                        }}>
+                        }}
+                        onClick={() => handleInputChange('rememberMe', !formData.rememberMe)}
+                      >
                         Remember me
                       </label>
                     </div>
@@ -179,7 +260,9 @@ export default function LoginPage(): React.JSX.Element {
                         fontWeight: 400,
                         fontSize: '18px',
                         textDecoration: 'underline'
-                      }}>
+                      }}
+                      onClick={handleForgotPassword}
+                    >
                       Forgot your password?
                     </button>
                   </div>
@@ -188,18 +271,22 @@ export default function LoginPage(): React.JSX.Element {
 
               {/* Login Button - точный градиент */}
               <button 
-                className="w-full h-12 sm:h-14 lg:h-[60px] text-white font-bold text-base sm:text-lg md:text-xl lg:text-[24px] rounded transition-all hover:opacity-90 active:scale-[0.98]"
+                type="submit"
+                className="w-full h-12 sm:h-14 lg:h-[60px] text-white font-bold text-base sm:text-lg md:text-xl lg:text-[24px] rounded transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
-                  background: 'linear-gradient(90.67deg, #F6B8FD -7.12%, #316AD7 114.37%)',
+                  background: isLoading 
+                    ? 'linear-gradient(90.67deg, #A8A8A8 -7.12%, #6B6B6B 114.37%)'
+                    : 'linear-gradient(90.67deg, #F6B8FD -7.12%, #316AD7 114.37%)',
                   fontFamily: 'Helvetica, sans-serif',
                   fontWeight: 700,
                   fontSize: '24px',
                   borderRadius: '8px',
                   border: 'none',
-                  cursor: 'pointer'
+                  cursor: isLoading ? 'not-allowed' : 'pointer'
                 }}
+                disabled={isLoading}
               >
-                Log In
+                {isLoading ? 'Logging in...' : 'Log In'}
               </button>
             </div>
 
@@ -242,6 +329,7 @@ export default function LoginPage(): React.JSX.Element {
                   width: '174.67px',
                   cursor: 'pointer'
                 }}
+                onClick={() => handleSocialLogin('Google')}
               >
                 <GoogleIcon className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8" />
               </button>
@@ -257,6 +345,7 @@ export default function LoginPage(): React.JSX.Element {
                   width: '174.67px',
                   cursor: 'pointer'
                 }}
+                onClick={() => handleSocialLogin('Facebook')}
               >
                 <FacebookIcon className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8" />
               </button>
@@ -272,11 +361,12 @@ export default function LoginPage(): React.JSX.Element {
                   width: '174.67px',
                   cursor: 'pointer'
                 }}
+                onClick={() => handleSocialLogin('Apple')}
               >
                 <AppleIcon className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8" />
               </button>
             </div>
-          </div>
+          </form>
         </div>
       </div>
 
@@ -382,4 +472,4 @@ function AppleIcon({ className }: { className?: string }) {
       <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
     </svg>
   );
-} 
+}
