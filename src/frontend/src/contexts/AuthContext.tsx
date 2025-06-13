@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { User, AuthState, AuthContextType } from './types';
+import { apiClient } from '../lib/api';
 
 // Контекст
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -72,32 +73,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true }));
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Реальный API вызов
+      const response = await apiClient.login({ email, password });
 
-      // В реальном приложении здесь будет API вызов с использованием password
-      // const response = await api.login({ email, password });
-      console.log('Login attempt:', { email, password }); // Используем password для отладки
+      if (!response.success || !response.user) {
+        throw new Error(response.message || 'Ошибка при входе');
+      }
 
-      const mockUser: User = {
-        id: '1',
-        email,
-        username: email.split('@')[0],
-        isEmailVerified: true // В реальности это придет с сервера
+      const user: User = {
+        id: response.user.id,
+        email: response.user.email,
+        username: response.user.username,
+        isEmailVerified: response.user.isEmailVerified
       };
 
-      const mockToken = 'mock-jwt-token';
-
       // Сохраняем в localStorage
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      localStorage.setItem('accessToken', mockToken);
+      localStorage.setItem('user', JSON.stringify(user));
+      if (response.token) {
+        localStorage.setItem('accessToken', response.token);
+      }
       localStorage.removeItem('pendingVerificationEmail');
 
       setAuthState({
-        user: mockUser,
-        isAuthenticated: true,
+        user,
+        isAuthenticated: user.isEmailVerified,
         isLoading: false,
-        pendingVerificationEmail: null
+        pendingVerificationEmail: user.isEmailVerified ? null : user.email
       });
     } catch (error) {
       setAuthState(prev => ({ ...prev, isLoading: false }));
@@ -111,13 +112,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setAuthState(prev => ({ ...prev, isLoading: true }));
     
     try {
-      // Симуляция регистрации - заменить на реальный API
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Реальный API вызов
+      const response = await apiClient.register(userData);
       
-      // Сохраняем username для использования после верификации
-      localStorage.setItem('pendingUsername', userData.username);
+      if (!response.success) {
+        throw new Error(response.message || 'Ошибка при регистрации');
+      }
       
       // После успешной регистрации сохраняем email для верификации
+      localStorage.setItem('pendingVerificationEmail', userData.email);
       setAuthState({
         user: null,
         isAuthenticated: false,
@@ -137,12 +140,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setAuthState(prev => ({ ...prev, isLoading: true }));
     
     try {
-      // Симуляция верификации - заменить на реальный API
+      // TODO: Добавить реальный API вызов для верификации email
+      // const response = await apiClient.verifyEmail({ code });
+      
+      // Временная симуляция - заменить на реальный API
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       // Получаем сохраненные данные регистрации
       const email = authState.pendingVerificationEmail || '';
-      const username = localStorage.getItem('pendingUsername') || email.split('@')[0];
+      const username = email.split('@')[0]; // Временно, пока нет API
       
       const user: User = {
         id: '1',
@@ -151,8 +157,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         isEmailVerified: true
       };
       
-      // Очищаем временные данные
-      localStorage.removeItem('pendingUsername');
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.removeItem('pendingVerificationEmail');
       
       setAuthState({
         user,
@@ -169,13 +175,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const resetPassword = async (email: string) => {
     console.log('Reset password request for:', email);
-    // В реальном приложении здесь будет API вызов
+    // TODO: Добавить реальный API вызов
     await new Promise(resolve => setTimeout(resolve, 1500));
   };
 
   const updatePassword = async (token: string, newPassword: string) => {
     console.log('Update password with token:', token, 'New password length:', newPassword.length);
-    // В реальном приложении здесь будет API вызов
+    // TODO: Добавить реальный API вызов
     await new Promise(resolve => setTimeout(resolve, 1500));
   };
 
@@ -183,7 +189,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('user');
     localStorage.removeItem('accessToken');
     localStorage.removeItem('pendingVerificationEmail');
-    localStorage.removeItem('pendingUsername');
     
     setAuthState({
       user: null,
