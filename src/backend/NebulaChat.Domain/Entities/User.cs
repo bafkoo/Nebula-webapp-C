@@ -19,6 +19,8 @@ public class User : BaseEntity
     
     public bool IsEmailVerified { get; set; } = false;
     
+    public DateTime? EmailVerifiedAt { get; set; }
+    
     public string? EmailVerificationToken { get; set; }
     
     public DateTime? EmailVerificationTokenExpiry { get; set; }

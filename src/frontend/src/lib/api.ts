@@ -19,6 +19,10 @@ export interface ResetPasswordRequest {
   newPassword: string;
 }
 
+export interface VerifyEmailRequest {
+  code: string;
+}
+
 export interface UserDto {
   id: string;
   username: string;
@@ -177,6 +181,27 @@ class ApiClient {
     return this.request<ApiResponse>('/auth/reset-password', {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  }
+
+  async verifyEmail(data: VerifyEmailRequest): Promise<AuthResponse> {
+    const response = await this.request<AuthResponse>('/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+
+    // Автоматически обновляем токен и пользователя при успешной верификации
+    if (response.success && response.token && response.user) {
+      TokenManager.setToken(response.token);
+      TokenManager.setUser(response.user);
+    }
+
+    return response;
+  }
+
+  async resendVerificationCode(): Promise<ApiResponse> {
+    return this.request<ApiResponse>('/auth/resend-verification', {
+      method: 'POST',
     });
   }
 

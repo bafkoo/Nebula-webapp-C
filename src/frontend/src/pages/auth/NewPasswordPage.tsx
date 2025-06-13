@@ -165,7 +165,7 @@ export default function NewPasswordPage(): React.JSX.Element {
       });
     } catch (error: unknown) {
       setErrors({ 
-        general: error.message || 'Не удалось изменить пароль. Попробуйте снова или запросите новую ссылку для сброса.' 
+        general: error instanceof Error ? error.message : 'Не удалось изменить пароль. Попробуйте снова или запросите новую ссылку для сброса.' 
       });
     } finally {
       setIsLoading(false);

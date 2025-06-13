@@ -11,7 +11,8 @@ public static class DependencyInjection
     {
         // Add DbContext
         services.AddDbContext<NebulaChatDbContext>(options =>
-            options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+            options.UseNpgsql(configuration.GetConnectionString("DefaultConnection"), 
+                b => b.MigrationsAssembly("NebulaChat.Infrastructure")));
 
         return services;
     }

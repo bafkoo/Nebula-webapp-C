@@ -141,42 +141,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setAuthState(prev => ({ ...prev, isLoading: true }));
     
     try {
-      // TODO: Добавить реальный API эндпоинт для верификации email
-      // const response = await apiClient.verifyEmail({ code });
+      // Используем реальный API эндпоинт для верификации email
+      const response = await apiClient.verifyEmail({ code });
       
-      // Временная симуляция - заменить на реальный API
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      if (!response.success || !response.user) {
+        throw new Error(response.message || 'Ошибка при верификации email');
+      }
       
       // Обновляем пользователя как верифицированного
-      const currentUser = authState.user;
-      if (currentUser) {
-        const updatedUser: User = {
-          ...currentUser,
-          isEmailVerified: true
-        };
-        
-        // Обновляем в TokenManager
-        const userDto = {
-          id: updatedUser.id,
-          username: updatedUser.username,
-          email: updatedUser.email,
-          isEmailVerified: true,
-          createdAt: new Date().toISOString()
-        };
-        TokenManager.setUser(userDto);
-        
-        setAuthState({
-          user: updatedUser,
-          isAuthenticated: true,
-          isLoading: false,
-          pendingVerificationEmail: null
-        });
-      }
+      const updatedUser: User = {
+        id: response.user.id,
+        email: response.user.email,
+        username: response.user.username,
+        isEmailVerified: response.user.isEmailVerified
+      };
+      
+      setAuthState({
+        user: updatedUser,
+        isAuthenticated: true,
+        isLoading: false,
+        pendingVerificationEmail: null
+      });
       
     } catch (error) {
       setAuthState(prev => ({ ...prev, isLoading: false }));
       throw error;
     }
+  };
+
+  const resendVerificationCode = async () => {
+    await apiClient.resendVerificationCode();
   };
 
   const resetPassword = async (email: string) => {
@@ -210,6 +204,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     register,
     logout,
     verifyEmail,
+    resendVerificationCode,
     resetPassword,
     updatePassword
   };

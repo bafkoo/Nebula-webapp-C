@@ -22,6 +22,7 @@ export interface AuthContextType {
   register: (userData: { username: string; email: string; password: string }) => Promise<void>;
   logout: () => void;
   verifyEmail: (code: string) => Promise<void>;
+  resendVerificationCode: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updatePassword: (token: string, newPassword: string) => Promise<void>;
 } 

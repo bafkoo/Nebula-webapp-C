@@ -4,6 +4,8 @@ using NebulaChat.Infrastructure.Data;
 using NebulaChat.Domain.Entities;
 using NebulaChat.API.DTOs;
 using NebulaChat.API.Services;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace NebulaChat.API.Controllers;
 
@@ -195,5 +197,132 @@ public class AuthController : ControllerBase
         await _context.SaveChangesAsync();
 
         return Ok(new { Success = true, Message = "Пароль успешно изменен" });
+    }
+
+    [HttpPost("verify-email")]
+    [Authorize]
+    public async Task<ActionResult<AuthResponse>> VerifyEmail(VerifyEmailRequest request)
+    {
+        // Получаем ID пользователя из JWT токена
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+        {
+            return BadRequest(new AuthResponse
+            {
+                Success = false,
+                Message = "Неверный токен аутентификации"
+            });
+        }
+
+        // Находим пользователя в базе данных
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null)
+        {
+            return BadRequest(new AuthResponse
+            {
+                Success = false,
+                Message = "Пользователь не найден"
+            });
+        }
+
+        // Проверяем, не верифицирован ли уже email
+        if (user.IsEmailVerified)
+        {
+            return BadRequest(new AuthResponse
+            {
+                Success = false,
+                Message = "Email уже подтвержден"
+            });
+        }
+
+        // Проверяем код подтверждения и его срок действия
+        if (user.EmailVerificationToken != request.Code)
+        {
+            return BadRequest(new AuthResponse
+            {
+                Success = false,
+                Message = "Неверный код подтверждения"
+            });
+        }
+
+        if (user.EmailVerificationTokenExpiry < DateTime.UtcNow)
+        {
+            return BadRequest(new AuthResponse
+            {
+                Success = false,
+                Message = "Код подтверждения истек. Запросите новый код"
+            });
+        }
+
+        // Подтверждаем email
+        user.IsEmailVerified = true;
+        user.EmailVerificationToken = null;
+        user.EmailVerificationTokenExpiry = null;
+        user.EmailVerifiedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        // Генерируем новый JWT токен с обновленным статусом верификации
+        var token = _jwtService.GenerateAccessToken(user);
+
+        return Ok(new AuthResponse
+        {
+            Success = true,
+            Message = "Email успешно подтвержден",
+            User = new UserDto
+            {
+                Id = user.Id,
+                Username = user.Username,
+                Email = user.Email,
+                IsEmailVerified = user.IsEmailVerified,
+                CreatedAt = user.CreatedAt
+            },
+            Token = token
+        });
+    }
+
+    [HttpPost("resend-verification")]
+    [Authorize]
+    public async Task<IActionResult> ResendVerificationCode()
+    {
+        // Получаем ID пользователя из JWT токена
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+        {
+            return BadRequest(new { Success = false, Message = "Неверный токен аутентификации" });
+        }
+
+        // Находим пользователя в базе данных
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null)
+        {
+            return BadRequest(new { Success = false, Message = "Пользователь не найден" });
+        }
+
+        // Проверяем, не верифицирован ли уже email
+        if (user.IsEmailVerified)
+        {
+            return BadRequest(new { Success = false, Message = "Email уже подтвержден" });
+        }
+
+        // Генерируем новый 6-значный код подтверждения
+        var verificationCode = new Random().Next(100000, 999999).ToString();
+        user.EmailVerificationToken = verificationCode;
+        user.EmailVerificationTokenExpiry = DateTime.UtcNow.AddDays(1);
+
+        await _context.SaveChangesAsync();
+
+        // Отправляем email с новым кодом подтверждения
+        try
+        {
+            await _emailService.SendVerificationEmailAsync(user.Email, user.Username, verificationCode);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error sending verification email: {ex.Message}");
+            return StatusCode(500, new { Success = false, Message = "Ошибка при отправке email" });
+        }
+
+        return Ok(new { Success = true, Message = "Новый код подтверждения отправлен на ваш email" });
     }
 } 

@@ -15,7 +15,7 @@ interface FormErrors {
 
 const VerificationPage: React.FC = () => {
   const navigate = useNavigate();
-  const { verifyEmail, pendingVerificationEmail } = useAuth();
+  const { verifyEmail, resendVerificationCode, pendingVerificationEmail } = useAuth();
   
   // Input refs for auto-focus
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -145,11 +145,8 @@ const VerificationPage: React.FC = () => {
     setErrors({});
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // In real app, this would be:
-      // await resendVerificationCode({ email: email });
+      // Используем реальный API метод
+      await resendVerificationCode();
       
       // Reset timer
       setCanResend(false);
@@ -159,9 +156,9 @@ const VerificationPage: React.FC = () => {
       setCode(Array(6).fill(''));
       inputRefs.current[0]?.focus();
       
-    } catch {
+    } catch (error: unknown) {
       setErrors({ 
-        general: 'Failed to resend code. Please try again.' 
+        general: error instanceof Error ? error.message : 'Не удалось отправить код повторно. Попробуйте снова.' 
       });
     } finally {
       setIsResending(false);
