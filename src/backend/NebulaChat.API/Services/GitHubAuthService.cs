@@ -44,12 +44,15 @@ public class GitHubAuthService : IGitHubAuthService
                 var emails = JsonSerializer.Deserialize<JsonElement[]>(emailJson);
                 
                 // Ищем основной email
-                foreach (var email in emails)
+                if (emails != null)
                 {
-                    if (email.GetProperty("primary").GetBoolean())
+                    foreach (var email in emails)
                     {
-                        primaryEmail = email.GetProperty("email").GetString();
-                        break;
+                        if (email.GetProperty("primary").GetBoolean())
+                        {
+                            primaryEmail = email.GetProperty("email").GetString();
+                            break;
+                        }
                     }
                 }
             }

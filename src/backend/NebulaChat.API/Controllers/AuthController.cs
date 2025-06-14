@@ -545,7 +545,7 @@ public class AuthController : ControllerBase
             return Ok(new AuthResponse
             {
                 Success = true,
-                Message = existingUser != null ? "Вход выполнен успешно" : "Регистрация прошла успешно",
+                Message = "GitHub аутентификация прошла успешно",
                 User = new UserDto
                 {
                     Id = user.Id,
@@ -564,6 +564,29 @@ public class AuthController : ControllerBase
             {
                 Success = false,
                 Message = "Ошибка при аутентификации через GitHub"
+            });
+        }
+    }
+
+    [HttpGet("test-db")]
+    public async Task<IActionResult> TestDatabase()
+    {
+        try
+        {
+            var userCount = await _context.Users.CountAsync();
+            return Ok(new { 
+                Success = true, 
+                Message = "Подключение к базе данных работает", 
+                UserCount = userCount,
+                DatabaseName = _context.Database.GetDbConnection().Database
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { 
+                Success = false, 
+                Message = "Ошибка подключения к базе данных", 
+                Error = ex.Message 
             });
         }
     }

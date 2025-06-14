@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { User, AuthState, AuthContextType } from './types';
 import { apiClient, TokenManager } from '../lib/api';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 // Контекст
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -20,6 +21,9 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     isAuthenticated: false,
@@ -70,6 +74,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     checkAuthState();
   }, []);
+
+  // Автоматическое перенаправление при успешной аутентификации
+  useEffect(() => {
+    if (authState.isAuthenticated && !authState.isLoading) {
+      // Проверяем, находимся ли мы на странице аутентификации
+      const authPages = ['/login', '/register', '/reset-password', '/new-password'];
+      const isOnAuthPage = authPages.some(page => location.pathname.startsWith(page));
+      
+      if (isOnAuthPage) {
+        navigate('/app', { replace: true });
+      }
+    }
+  }, [authState.isAuthenticated, authState.isLoading, location.pathname, navigate]);
 
    
   const login = async (email: string, password: string) => {

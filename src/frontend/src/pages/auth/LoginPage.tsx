@@ -64,9 +64,8 @@ export default function LoginPage(): React.JSX.Element {
         await googleAuth(idToken);
         
         setLoaderMessage(t('auth.login.redirecting'));
-        setTimeout(() => {
-          navigate('/app');
-        }, 500);
+        // Убираем принудительную навигацию - позволяем ProtectedRoute обработать это
+        setShowFullScreenLoader(false);
       } catch (error) {
         console.error('Google OAuth error:', error);
         setShowFullScreenLoader(false);
@@ -124,10 +123,9 @@ export default function LoginPage(): React.JSX.Element {
           await gitHubAuth(access_token);
           
           setLoaderMessage(t('auth.login.redirecting'));
-          setTimeout(() => {
-            navigate('/app');
-            popup?.close();
-          }, 500);
+          // Убираем принудительную навигацию - позволяем ProtectedRoute обработать это
+          setShowFullScreenLoader(false);
+          popup?.close();
         } catch (error) {
           console.error('GitHub OAuth error:', error);
           setShowFullScreenLoader(false);
@@ -391,10 +389,8 @@ export default function LoginPage(): React.JSX.Element {
       
       setLoaderMessage(t('auth.login.redirecting'));
       console.log('✅ Перенаправляем в приложение');
-      // После успешного входа перенаправляем в приложение
-      setTimeout(() => {
-        navigate('/app');
-      }, 500);
+      // Убираем принудительную навигацию - позволяем ProtectedRoute обработать это
+      setShowFullScreenLoader(false);
     } catch (error) {
       console.error('❌ Ошибка входа:', error);
       setShowFullScreenLoader(false);

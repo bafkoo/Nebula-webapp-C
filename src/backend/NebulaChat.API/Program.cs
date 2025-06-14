@@ -7,6 +7,14 @@ using Resend;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure Kestrel to listen on specific URLs
+builder.WebHost.UseUrls("http://localhost:5000");
+
+// Debug: Check connection string
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+Console.WriteLine($"🔍 Connection String: {connectionString}");
+Console.WriteLine($"🔍 Environment: {builder.Environment.EnvironmentName}");
+
 // Add services to the container.
 builder.Services.AddControllers();
 
@@ -77,5 +85,10 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Add startup logging
+Console.WriteLine("🚀 Starting NebulaChat API server...");
+Console.WriteLine($"🌐 Server will be available at: http://localhost:5000");
+Console.WriteLine($"🔧 Environment: {app.Environment.EnvironmentName}");
 
 app.Run(); 
