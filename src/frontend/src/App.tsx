@@ -18,6 +18,9 @@ import NewPasswordPage from './pages/auth/NewPasswordPage'
 import VerificationPage from './pages/auth/VerificationPage'
 import GitHubCallback from './pages/auth/GitHubCallback'
 
+// Main Pages
+import LandingPage from './pages/LandingPage'
+
 // UI Components
 import LoaderExample from './components/ui/LoaderExample'
 
@@ -48,6 +51,9 @@ function App() {
       <Router>
         <AuthProvider>
           <Routes>
+            {/* Landing Page */}
+            <Route path="/" element={<LandingPage />} />
+            
             {/* Public Auth Routes */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
@@ -80,7 +86,7 @@ function App() {
             />
             
             {/* Default redirect */}
-            <Route path="*" element={<Navigate to="/login" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AuthProvider>
       </Router>

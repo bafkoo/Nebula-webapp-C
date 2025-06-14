@@ -78,7 +78,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Автоматическое перенаправление при успешной аутентификации
   useEffect(() => {
     if (authState.isAuthenticated && !authState.isLoading) {
-      // Проверяем, находимся ли мы на странице аутентификации
+      // Проверяем, находимся ли мы на странице аутентификации (исключая главную)
       const authPages = ['/login', '/register', '/reset-password', '/new-password'];
       const isOnAuthPage = authPages.some(page => location.pathname.startsWith(page));
       
