@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckIcon, EyeIcon, EyeOffIcon } from 'lucide-react';
+import { useGoogleLogin } from '@react-oauth/google';
 import backGroundRegister from '../../assets/auth/register/backgrounds/backGroundRegister.png';
 import logoImage from '../../assets/auth/login/logos/logo (2).png';
 import { useAuth } from '../../contexts/AuthContext';
@@ -34,7 +35,42 @@ export default function RegisterPage(): React.JSX.Element {
 
   // Навигация и Auth
   const navigate = useNavigate();
-  const { register } = useAuth();
+  const { register, googleAuth } = useAuth();
+
+  // Google OAuth login
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        setIsLoading(true);
+        
+        // Получаем информацию о пользователе через Google API
+        const userInfoResponse = await fetch(`https://www.googleapis.com/oauth2/v2/userinfo?access_token=${tokenResponse.access_token}`);
+        const userInfo = await userInfoResponse.json();
+        
+        // Создаем простой ID токен из полученных данных
+        const tokenData = {
+          sub: userInfo.id,
+          email: userInfo.email,
+          name: userInfo.name,
+          picture: userInfo.picture,
+          email_verified: userInfo.verified_email
+        };
+        
+        // Безопасное кодирование в base64 с поддержкой UTF-8
+        const idToken = btoa(unescape(encodeURIComponent(JSON.stringify(tokenData))));
+        
+        await googleAuth(idToken);
+        navigate('/app');
+      } catch (error) {
+        console.error('Google OAuth error:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    onError: (error) => {
+      console.error('Google OAuth error:', error);
+    },
+  });
 
   // Анимация появления
   useEffect(() => {
@@ -72,7 +108,11 @@ export default function RegisterPage(): React.JSX.Element {
   };
 
   const handleSocialLogin = (provider: string) => {
-    console.log(`${provider} registration clicked`);
+    if (provider === 'Google') {
+      googleLogin();
+    } else {
+      console.log(`${provider} registration clicked`);
+    }
   };
 
   // Inline styles for animations and effects

@@ -17,6 +17,8 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IGoogleAuthService, GoogleAuthService>();
+builder.Services.AddHttpClient<IGitHubAuthService, GitHubAuthService>();
 
 // Add Resend
 builder.Services.AddOptions();
@@ -68,7 +70,7 @@ if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
 }
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection(); // Отключаем для разработки
 app.UseCors("AllowFrontend");
 
 app.UseAuthentication();

@@ -25,4 +25,6 @@ export interface AuthContextType {
   resendVerificationCode: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updatePassword: (token: string, newPassword: string) => Promise<void>;
+  googleAuth: (idToken: string) => Promise<void>;
+  gitHubAuth: (accessToken: string) => Promise<void>;
 } 

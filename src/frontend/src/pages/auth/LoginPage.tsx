@@ -1,6 +1,7 @@
 import { CheckIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useGoogleLogin } from '@react-oauth/google';
 import { useAuth } from "../../contexts/AuthContext";
 import gradientMainBg from "../../assets/auth/login/backgrounds/gradient-main.webp";
 import logoImage from "../../assets/auth/login/logos/logo (2).png";
@@ -18,6 +19,7 @@ export default function LoginPage(): React.JSX.Element {
   
   // Состояние загрузки
   const [isLoading, setIsLoading] = useState(false);
+  const [isGitHubLoading, setIsGitHubLoading] = useState(false);
 
   // Состояния фокуса для полей
   const [focusedField, setFocusedField] = useState<string | null>(null);
@@ -27,7 +29,131 @@ export default function LoginPage(): React.JSX.Element {
 
   // Навигация и Auth
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, googleAuth, gitHubAuth } = useAuth();
+
+  // Google OAuth login
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        setIsLoading(true);
+        
+        // Получаем информацию о пользователе через Google API
+        const userInfoResponse = await fetch(`https://www.googleapis.com/oauth2/v2/userinfo?access_token=${tokenResponse.access_token}`);
+        const userInfo = await userInfoResponse.json();
+        
+        // Создаем простой ID токен из полученных данных
+        const tokenData = {
+          sub: userInfo.id,
+          email: userInfo.email,
+          name: userInfo.name,
+          picture: userInfo.picture,
+          email_verified: userInfo.verified_email
+        };
+        
+        // Безопасное кодирование в base64 с поддержкой UTF-8
+        const idToken = btoa(unescape(encodeURIComponent(JSON.stringify(tokenData))));
+        
+        await googleAuth(idToken);
+        navigate('/app');
+      } catch (error) {
+        console.error('Google OAuth error:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    onError: (error) => {
+      console.error('Google OAuth error:', error);
+    },
+  });
+
+  // GitHub OAuth login
+  const gitHubLogin = () => {
+    setIsGitHubLoading(true);
+    
+    const clientId = 'Ov23limLdWeZyzmGnsbm';
+    const redirectUri = `${window.location.origin}/auth/github/callback`;
+    const scope = 'user:email';
+    
+    const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}`;
+    
+    // Открываем GitHub OAuth в новом окне
+    const popup = window.open(githubAuthUrl, 'github-oauth', 'width=600,height=700');
+    
+    // Слушаем сообщения от popup окна
+    const handleMessage = async (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      
+      if (event.data.type === 'GITHUB_OAUTH_SUCCESS') {
+        const { code } = event.data;
+        
+        try {
+          setIsLoading(true);
+          
+          // Обмениваем код на access token через наш backend
+          const response = await fetch('http://localhost:5000/api/auth/github/exchange', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ code }),
+          });
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+          }
+          
+          const { access_token } = await response.json();
+          
+          // Используем access token для аутентификации
+          await gitHubAuth(access_token);
+          
+          navigate('/app');
+          popup?.close();
+        } catch (error) {
+          console.error('GitHub OAuth error:', error);
+        } finally {
+          setIsLoading(false);
+          setIsGitHubLoading(false);
+        }
+      } else if (event.data.type === 'GITHUB_OAUTH_ERROR') {
+        console.error('GitHub OAuth error:', event.data.error);
+        setIsLoading(false);
+        setIsGitHubLoading(false);
+        popup?.close();
+      }
+    };
+    
+    window.addEventListener('message', handleMessage);
+    
+    // Очищаем слушатель при закрытии popup
+    const checkClosed = setInterval(() => {
+      if (popup?.closed) {
+        window.removeEventListener('message', handleMessage);
+        clearInterval(checkClosed);
+        setIsLoading(false); // Сбрасываем состояние загрузки если popup закрыт
+        setIsGitHubLoading(false);
+      }
+    }, 1000);
+    
+    // Принудительно закрываем popup через 2 минуты (безопасность)
+    const forceCloseTimeout = setTimeout(() => {
+      if (popup && !popup.closed) {
+        popup.close();
+        window.removeEventListener('message', handleMessage);
+        clearInterval(checkClosed);
+        setIsLoading(false);
+        setIsGitHubLoading(false);
+      }
+    }, 120000); // 2 минуты
+    
+    // Очистка при размонтировании компонента
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      clearInterval(checkClosed);
+      clearTimeout(forceCloseTimeout);
+    };
+  };
 
   // Анимация появления
   useEffect(() => {
@@ -254,8 +380,14 @@ export default function LoginPage(): React.JSX.Element {
   };
 
   const handleSocialLogin = (provider: string) => {
-    console.log(`Вход через ${provider}`);
-    // Здесь будет логика OAuth
+    if (provider === 'Google') {
+      googleLogin();
+    } else if (provider === 'GitHub') {
+      gitHubLogin();
+    } else {
+      console.log(`Вход через ${provider}`);
+      // Здесь будет логика для других провайдеров
+    }
   };
 
   const handleForgotPassword = () => {
@@ -591,20 +723,26 @@ export default function LoginPage(): React.JSX.Element {
                 <GoogleIcon className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8" />
               </button>
               
-              {/* Facebook Button */}
+              {/* GitHub Button */}
               <button
                 className="social-button flex flex-row justify-center items-center h-12 sm:h-14 lg:h-[60px] border bg-transparent rounded p-2 sm:p-3"
                 style={{ 
                   borderWidth: '1px',
-                  borderColor: '#4D4D4D',
+                  borderColor: isGitHubLoading ? '#7177FF' : '#4D4D4D',
                   filter: 'drop-shadow(0px 1px 2px rgba(16, 24, 40, 0.05))',
                   borderRadius: '8px',
                   width: '174.67px',
-                  cursor: 'pointer'
+                  cursor: isGitHubLoading ? 'not-allowed' : 'pointer',
+                  opacity: isGitHubLoading ? 0.7 : 1
                 }}
-                onClick={() => handleSocialLogin('Facebook')}
+                onClick={() => !isGitHubLoading && handleSocialLogin('GitHub')}
+                disabled={isGitHubLoading}
               >
-                <FacebookIcon className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8" />
+                {isGitHubLoading ? (
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                ) : (
+                  <GitHubIcon className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8" />
+                )}
               </button>
               
               {/* Apple Button */}
@@ -702,7 +840,6 @@ export default function LoginPage(): React.JSX.Element {
     </div>
   );
 }
-
 // Google Icon component - оригинальный дизайн
 function GoogleIcon({ className }: { className?: string }) {
   return (
@@ -715,12 +852,11 @@ function GoogleIcon({ className }: { className?: string }) {
   );
 }
 
-// Facebook Icon component - оригинальный дизайн
-function FacebookIcon({ className }: { className?: string }) {
+// GitHub Icon component - оригинальный дизайн
+function GitHubIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24">
-      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" fill="#1877F2"/>
-      <path d="M16.671 15.543l.532-3.47h-3.328v-2.25c0-.949.465-1.874 1.956-1.874h1.513V4.996s-1.374-.235-2.686-.235c-2.741 0-4.533 1.662-4.533 4.669v2.632H7.078v3.47h3.047v8.385a12.118 12.118 0 003.75 0v-8.385h2.796z" fill="#FFFFFF"/>
+    <svg className={className} viewBox="0 0 24 24" fill="#FFFFFF">
+      <path d="M12 0.297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
     </svg>
   );
 }

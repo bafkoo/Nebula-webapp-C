@@ -23,6 +23,14 @@ export interface VerifyEmailRequest {
   code: string;
 }
 
+export interface GoogleAuthRequest {
+  idToken: string;
+}
+
+export interface GitHubAuthRequest {
+  accessToken: string;
+}
+
 export interface UserDto {
   id: string;
   username: string;
@@ -203,6 +211,34 @@ class ApiClient {
     return this.request<ApiResponse>('/auth/resend-verification', {
       method: 'POST',
     });
+  }
+
+  async googleAuth(data: GoogleAuthRequest): Promise<AuthResponse> {
+    const response = await this.request<AuthResponse>('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+
+    if (response.success && response.token && response.user) {
+      TokenManager.setToken(response.token);
+      TokenManager.setUser(response.user);
+    }
+
+    return response;
+  }
+
+  async gitHubAuth(data: GitHubAuthRequest): Promise<AuthResponse> {
+    const response = await this.request<AuthResponse>('/auth/github', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+
+    if (response.success && response.token && response.user) {
+      TokenManager.setToken(response.token);
+      TokenManager.setUser(response.user);
+    }
+
+    return response;
   }
 
   // Метод для получения профиля (будет полезен для защищенных эндпоинтов)

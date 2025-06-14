@@ -6,6 +6,9 @@ using NebulaChat.API.DTOs;
 using NebulaChat.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+using System.Linq;
+using Microsoft.Extensions.Configuration;
+using System.Net.Http.Json;
 
 namespace NebulaChat.API.Controllers;
 
@@ -17,13 +20,19 @@ public class AuthController : ControllerBase
     private readonly IPasswordService _passwordService;
     private readonly IJwtService _jwtService;
     private readonly IEmailService _emailService;
+    private readonly IGoogleAuthService _googleAuthService;
+    private readonly IGitHubAuthService _gitHubAuthService;
+    private readonly IConfiguration _configuration;
 
-    public AuthController(NebulaChatDbContext context, IPasswordService passwordService, IJwtService jwtService, IEmailService emailService)
+    public AuthController(NebulaChatDbContext context, IPasswordService passwordService, IJwtService jwtService, IEmailService emailService, IGoogleAuthService googleAuthService, IGitHubAuthService gitHubAuthService, IConfiguration configuration)
     {
         _context = context;
         _passwordService = passwordService;
         _jwtService = jwtService;
         _emailService = emailService;
+        _googleAuthService = googleAuthService;
+        _gitHubAuthService = gitHubAuthService;
+        _configuration = configuration;
     }
 
     [HttpPost("register")]
@@ -324,5 +333,238 @@ public class AuthController : ControllerBase
         }
 
         return Ok(new { Success = true, Message = "Новый код подтверждения отправлен на ваш email" });
+    }
+
+    [HttpPost("google")]
+    public async Task<ActionResult<AuthResponse>> GoogleAuth(GoogleAuthRequest request)
+    {
+        try
+        {
+            var googleUserInfo = await _googleAuthService.VerifyGoogleTokenAsync(request.IdToken);
+            if (googleUserInfo == null)
+            {
+                return BadRequest(new AuthResponse
+                {
+                    Success = false,
+                    Message = "Неверный Google токен"
+                });
+            }
+
+            var existingUser = await _context.Users.FirstOrDefaultAsync(u => 
+                u.GoogleId == googleUserInfo.GoogleId || u.Email == googleUserInfo.Email);
+
+            User user;
+
+            if (existingUser != null)
+            {
+                user = existingUser;
+                if (string.IsNullOrEmpty(user.GoogleId))
+                {
+                    user.GoogleId = googleUserInfo.GoogleId;
+                }
+                if (!string.IsNullOrEmpty(googleUserInfo.Picture))
+                {
+                    user.AvatarUrl = googleUserInfo.Picture;
+                }
+                if (googleUserInfo.EmailVerified && !user.IsEmailVerified)
+                {
+                    user.IsEmailVerified = true;
+                    user.EmailVerifiedAt = DateTime.UtcNow;
+                    user.EmailVerificationToken = null;
+                    user.EmailVerificationTokenExpiry = null;
+                }
+                user.LastLoginAt = DateTime.UtcNow;
+            }
+            else
+            {
+                user = new User
+                {
+                    Id = Guid.NewGuid(),
+                    Username = GenerateUsernameFromEmail(googleUserInfo.Email),
+                    Email = googleUserInfo.Email,
+                    PasswordHash = string.Empty,
+                    GoogleId = googleUserInfo.GoogleId,
+                    AvatarUrl = googleUserInfo.Picture,
+                    IsEmailVerified = googleUserInfo.EmailVerified,
+                    EmailVerifiedAt = googleUserInfo.EmailVerified ? DateTime.UtcNow : null
+                };
+                _context.Users.Add(user);
+            }
+
+            await _context.SaveChangesAsync();
+
+            var token = _jwtService.GenerateAccessToken(user);
+
+            return Ok(new AuthResponse
+            {
+                Success = true,
+                Message = existingUser != null ? "Вход выполнен успешно" : "Регистрация прошла успешно",
+                User = new UserDto
+                {
+                    Id = user.Id,
+                    Username = user.Username,
+                    Email = user.Email,
+                    IsEmailVerified = user.IsEmailVerified,
+                    CreatedAt = user.CreatedAt
+                },
+                Token = token
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in Google auth: {ex.Message}");
+            return StatusCode(500, new AuthResponse
+            {
+                Success = false,
+                Message = "Ошибка при аутентификации через Google"
+            });
+        }
+    }
+
+    private string GenerateUsernameFromEmail(string email)
+    {
+        var username = email.Split('@')[0];
+        username = new string(username.Where(c => char.IsLetterOrDigit(c) || c == '_').ToArray());
+        if (username.Length > 20)
+        {
+            username = username.Substring(0, 20);
+        }
+        return username;
+    }
+
+    [HttpPost("github/exchange")]
+    public async Task<IActionResult> ExchangeGitHubCode([FromBody] GitHubCodeExchangeRequest request)
+    {
+        try
+        {
+            var clientId = _configuration["GitHub:ClientId"];
+            var clientSecret = _configuration["GitHub:ClientSecret"];
+
+            Console.WriteLine($"GitHub Client ID: {clientId}");
+            Console.WriteLine($"GitHub Client Secret: {(string.IsNullOrEmpty(clientSecret) ? "NOT SET" : "SET")}");
+            Console.WriteLine($"Received code: {request.Code}");
+
+            if (string.IsNullOrEmpty(clientSecret) || clientSecret == "your-github-client-secret")
+            {
+                return BadRequest(new { error = "GitHub Client Secret not configured" });
+            }
+
+            var tokenRequest = new
+            {
+                client_id = clientId,
+                client_secret = clientSecret,
+                code = request.Code
+            };
+
+            using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
+            httpClient.DefaultRequestHeaders.Add("User-Agent", "NebulaChat");
+
+            var response = await httpClient.PostAsJsonAsync("https://github.com/login/oauth/access_token", tokenRequest);
+            var responseContent = await response.Content.ReadAsStringAsync();
+            
+            Console.WriteLine($"GitHub response status: {response.StatusCode}");
+            Console.WriteLine($"GitHub response content: {responseContent}");
+            
+            var tokenResponse = await response.Content.ReadFromJsonAsync<GitHubTokenResponse>();
+
+            if (tokenResponse?.AccessToken == null)
+            {
+                return BadRequest(new { error = "Failed to exchange code for token", details = responseContent });
+            }
+
+            return Ok(new { access_token = tokenResponse.AccessToken });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Exception in GitHub exchange: {ex.Message}");
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpPost("github")]
+    public async Task<ActionResult<AuthResponse>> GitHubAuth(GitHubAuthRequest request)
+    {
+        try
+        {
+            var gitHubUserInfo = await _gitHubAuthService.VerifyGitHubTokenAsync(request.AccessToken);
+            if (gitHubUserInfo == null)
+            {
+                return BadRequest(new AuthResponse
+                {
+                    Success = false,
+                    Message = "Неверный GitHub токен"
+                });
+            }
+
+            var existingUser = await _context.Users.FirstOrDefaultAsync(u => 
+                u.GitHubId == gitHubUserInfo.GitHubId || u.Email == gitHubUserInfo.Email);
+
+            User user;
+
+            if (existingUser != null)
+            {
+                user = existingUser;
+                if (string.IsNullOrEmpty(user.GitHubId))
+                {
+                    user.GitHubId = gitHubUserInfo.GitHubId;
+                }
+                if (!string.IsNullOrEmpty(gitHubUserInfo.AvatarUrl))
+                {
+                    user.AvatarUrl = gitHubUserInfo.AvatarUrl;
+                }
+                if (gitHubUserInfo.EmailVerified && !user.IsEmailVerified)
+                {
+                    user.IsEmailVerified = true;
+                    user.EmailVerifiedAt = DateTime.UtcNow;
+                    user.EmailVerificationToken = null;
+                    user.EmailVerificationTokenExpiry = null;
+                }
+                user.LastLoginAt = DateTime.UtcNow;
+            }
+            else
+            {
+                user = new User
+                {
+                    Id = Guid.NewGuid(),
+                    Username = !string.IsNullOrEmpty(gitHubUserInfo.Username) ? gitHubUserInfo.Username : GenerateUsernameFromEmail(gitHubUserInfo.Email),
+                    Email = gitHubUserInfo.Email,
+                    PasswordHash = string.Empty,
+                    GitHubId = gitHubUserInfo.GitHubId,
+                    AvatarUrl = gitHubUserInfo.AvatarUrl,
+                    IsEmailVerified = gitHubUserInfo.EmailVerified,
+                    EmailVerifiedAt = gitHubUserInfo.EmailVerified ? DateTime.UtcNow : null
+                };
+                _context.Users.Add(user);
+            }
+
+            await _context.SaveChangesAsync();
+
+            var token = _jwtService.GenerateAccessToken(user);
+
+            return Ok(new AuthResponse
+            {
+                Success = true,
+                Message = existingUser != null ? "Вход выполнен успешно" : "Регистрация прошла успешно",
+                User = new UserDto
+                {
+                    Id = user.Id,
+                    Username = user.Username,
+                    Email = user.Email,
+                    IsEmailVerified = user.IsEmailVerified,
+                    CreatedAt = user.CreatedAt
+                },
+                Token = token
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in GitHub auth: {ex.Message}");
+            return StatusCode(500, new AuthResponse
+            {
+                Success = false,
+                Message = "Ошибка при аутентификации через GitHub"
+            });
+        }
     }
 } 

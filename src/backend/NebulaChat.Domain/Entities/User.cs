@@ -30,4 +30,13 @@ public class User : BaseEntity
     public DateTime? PasswordResetTokenExpiry { get; set; }
     
     public DateTime? LastLoginAt { get; set; }
+    
+    // OAuth fields
+    public string? GoogleId { get; set; }
+    
+    public string? GitHubId { get; set; }
+    
+    public string? AppleId { get; set; }
+    
+    public string? AvatarUrl { get; set; }
 } 

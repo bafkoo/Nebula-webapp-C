@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NebulaChat.Infrastructure.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NebulaChat.Infrastructure.Migrations
 {
     [DbContext(typeof(NebulaChatDbContext))]
-    partial class NebulaChatDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250613213949_AddOAuthFields")]
+    partial class AddOAuthFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -52,7 +55,7 @@ namespace NebulaChat.Infrastructure.Migrations
                     b.Property<DateTime?>("EmailVerifiedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("GitHubId")
+                    b.Property<string>("FacebookId")
                         .HasColumnType("text");
 
                     b.Property<string>("GoogleId")

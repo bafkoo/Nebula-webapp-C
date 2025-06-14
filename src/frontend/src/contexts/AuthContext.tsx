@@ -195,6 +195,64 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     });
   };
 
+  const googleAuth = async (idToken: string) => {
+    try {
+      setAuthState(prev => ({ ...prev, isLoading: true }));
+
+      const response = await apiClient.googleAuth({ idToken });
+
+      if (!response.success || !response.user) {
+        throw new Error(response.message || 'Ошибка при аутентификации через Google');
+      }
+
+      const user: User = {
+        id: response.user.id,
+        email: response.user.email,
+        username: response.user.username,
+        isEmailVerified: response.user.isEmailVerified
+      };
+
+      setAuthState({
+        user,
+        isAuthenticated: true,
+        isLoading: false,
+        pendingVerificationEmail: user.isEmailVerified ? null : user.email
+      });
+    } catch (error) {
+      setAuthState(prev => ({ ...prev, isLoading: false }));
+      throw error;
+    }
+  };
+
+  const gitHubAuth = async (accessToken: string) => {
+    try {
+      setAuthState(prev => ({ ...prev, isLoading: true }));
+
+      const response = await apiClient.gitHubAuth({ accessToken });
+
+      if (!response.success || !response.user) {
+        throw new Error(response.message || 'Ошибка при аутентификации через GitHub');
+      }
+
+      const user: User = {
+        id: response.user.id,
+        email: response.user.email,
+        username: response.user.username,
+        isEmailVerified: response.user.isEmailVerified
+      };
+
+      setAuthState({
+        user,
+        isAuthenticated: true,
+        isLoading: false,
+        pendingVerificationEmail: user.isEmailVerified ? null : user.email
+      });
+    } catch (error) {
+      setAuthState(prev => ({ ...prev, isLoading: false }));
+      throw error;
+    }
+  };
+
   const value: AuthContextType = {
     user: authState.user,
     isAuthenticated: authState.isAuthenticated,
@@ -206,7 +264,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     verifyEmail,
     resendVerificationCode,
     resetPassword,
-    updatePassword
+    updatePassword,
+    googleAuth,
+    gitHubAuth
   };
 
   return (

@@ -15,7 +15,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requireVerificationPending = false,
   redirectTo = '/login'
 }) => {
-  const { isAuthenticated, needsVerification, isLoading } = useAuth();
+  const { isAuthenticated, pendingVerificationEmail, isLoading } = useAuth();
   const location = useLocation();
 
   // Показываем загрузку пока проверяем состояние аутентификации
@@ -42,7 +42,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     }
     
     // Если нет состояния ожидания верификации, перенаправляем на регистрацию
-    if (!needsVerification) {
+    if (!pendingVerificationEmail) {
       return <Navigate to="/register" replace />;
     }
     
@@ -53,7 +53,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // Логика для страниц, требующих полной аутентификации (например, /app)
   if (requireAuth) {
     // Если не аутентифицирован, но есть ожидание верификации - перенаправляем на верификацию
-    if (!isAuthenticated && needsVerification) {
+    if (!isAuthenticated && pendingVerificationEmail) {
       return <Navigate to="/verification" replace />;
     }
     
