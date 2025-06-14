@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import backGroundRegister from '../../assets/auth/register/backgrounds/backGroundRegister.png';
 import logoImage from '../../assets/auth/login/logos/logo (2).png';
 import { useAuth } from '../../contexts/AuthContext';
+import FullScreenPremiumLoader from '../../components/ui/FullScreenPremiumLoader';
 
 interface FormData {
   username: string;
@@ -27,7 +28,8 @@ export default function RegisterPage(): React.JSX.Element {
   
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [showFullScreenLoader, setShowFullScreenLoader] = useState(false);
+  const [loaderMessage, setLoaderMessage] = useState('');
   
   // Состояния фокуса для полей
   const [focusedField, setFocusedField] = useState<string | null>(null);
@@ -43,11 +45,14 @@ export default function RegisterPage(): React.JSX.Element {
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        setIsLoading(true);
+        setShowFullScreenLoader(true);
+        setLoaderMessage(t('auth.register.googleAuth'));
         
         // Получаем информацию о пользователе через Google API
         const userInfoResponse = await fetch(`https://www.googleapis.com/oauth2/v2/userinfo?access_token=${tokenResponse.access_token}`);
         const userInfo = await userInfoResponse.json();
+        
+        setLoaderMessage(t('auth.register.processingAuth'));
         
         // Создаем простой ID токен из полученных данных
         const tokenData = {
@@ -62,15 +67,19 @@ export default function RegisterPage(): React.JSX.Element {
         const idToken = btoa(unescape(encodeURIComponent(JSON.stringify(tokenData))));
         
         await googleAuth(idToken);
-        navigate('/app');
+        
+        setLoaderMessage(t('auth.register.redirecting'));
+        setTimeout(() => {
+          navigate('/app');
+        }, 500);
       } catch (error) {
         console.error('Google OAuth error:', error);
-      } finally {
-        setIsLoading(false);
+        setShowFullScreenLoader(false);
       }
     },
     onError: (error) => {
       console.error('Google OAuth error:', error);
+      setShowFullScreenLoader(false);
     },
   });
 
@@ -88,7 +97,8 @@ export default function RegisterPage(): React.JSX.Element {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setShowFullScreenLoader(true);
+    setLoaderMessage(t('auth.register.registering'));
     
     try {
       // Используем функцию register из AuthContext
@@ -98,14 +108,17 @@ export default function RegisterPage(): React.JSX.Element {
         password: formData.password
       });
       
+      setLoaderMessage(t('auth.register.redirectingToVerification'));
+      
       // После успешной регистрации пользователь автоматически будет перенаправлен
       // на страницу верификации через ProtectedRoute логику
-      navigate('/verification');
+      setTimeout(() => {
+        navigate('/verification');
+      }, 500);
     } catch (error) {
       console.error('Registration error:', error);
+      setShowFullScreenLoader(false);
       // Здесь можно добавить обработку ошибок регистрации
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -694,29 +707,16 @@ export default function RegisterPage(): React.JSX.Element {
               type="submit"
               className="w-full h-12 sm:h-14 lg:h-[60px] text-white font-bold text-base sm:text-lg md:text-xl lg:text-[24px] rounded transition-all duration-300 hover:opacity-90 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed register-button"
               style={{
-                background: isLoading 
-                  ? 'linear-gradient(90.67deg, #A8A8A8 -7.12%, #6B6B6B 114.37%)'
-                  : 'linear-gradient(90.67deg, #F6B8FD -7.12%, #316AD7 114.37%)',
+                background: 'linear-gradient(90.67deg, #F6B8FD -7.12%, #316AD7 114.37%)',
                 fontFamily: 'Helvetica, sans-serif',
                 fontWeight: 700,
                 borderRadius: '8px',
                 border: 'none',
-                cursor: isLoading ? 'not-allowed' : 'pointer'
+                cursor: 'pointer'
               }}
-              disabled={isLoading || !formData.agreeToTerms}
+              disabled={!formData.agreeToTerms}
             >
-              {isLoading ? (
-                <div className="flex items-center justify-center gap-2">
-                  <span>{t('auth.register.registering')}</span>
-                  <div className="loading-dots">
-                    <div className="loading-dot"></div>
-                    <div className="loading-dot"></div>
-                    <div className="loading-dot"></div>
-                  </div>
-                </div>
-              ) : (
-                t('auth.register.registerButton')
-              )}
+              {t('auth.register.registerButton')}
             </button>
           </form>
 
@@ -866,6 +866,14 @@ export default function RegisterPage(): React.JSX.Element {
           filter: 'blur(40px)'
         }}
       />
+
+      {/* Полноэкранный премиум лоадер */}
+      {showFullScreenLoader && (
+        <FullScreenPremiumLoader 
+          message={loaderMessage} 
+          size={200}
+        />
+      )}
     </div>
   );
 }

@@ -31,7 +31,11 @@
       "loggingIn": "Logging in",
       "noAccount": "Don't have an account yet?",
       "registerLink": "Register",
-      "contactSupport": "Contact Support"
+      "contactSupport": "Contact Support",
+      "googleAuth": "Authenticating with Google...",
+      "githubAuth": "Authenticating with GitHub...",
+      "processingAuth": "Processing authentication data...",
+      "redirecting": "Redirecting to application..."
     },
     "register": {
       "title": "Join the Nebula Community",
@@ -44,7 +48,11 @@
       "registerButton": "Create Account",
       "registering": "Creating Account",
       "haveAccount": "Already have an account?",
-      "loginLink": "Log In"
+      "loginLink": "Log In",
+      "googleAuth": "Registering with Google...",
+      "processingAuth": "Processing authentication data...",
+      "redirecting": "Redirecting to application...",
+      "redirectingToVerification": "Redirecting to verification page..."
     },
     "resetPassword": {
       "title": "Reset Password",
@@ -52,6 +60,7 @@
       "emailLabel": "Email Address",
       "sendButton": "Send Reset Password Link",
       "sending": "Sending",
+      "emailSent": "Email sent to your address...",
       "successTitle": "Check Your Email",
       "successMessage": "We've sent a password reset link to {{email}}. Click the link in the email to create a new password.",
       "backToLogin": "Back to Login",

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useGoogleLogin } from '@react-oauth/google';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from "../../contexts/AuthContext";
+import FullScreenPremiumLoader from "../../components/ui/FullScreenPremiumLoader";
 import gradientMainBg from "../../assets/auth/login/backgrounds/gradient-main.webp";
 import logoImage from "../../assets/auth/login/logos/logo (2).png";
 
@@ -22,6 +23,8 @@ export default function LoginPage(): React.JSX.Element {
   // Состояние загрузки
   const [isLoading, setIsLoading] = useState(false);
   const [isGitHubLoading, setIsGitHubLoading] = useState(false);
+  const [showFullScreenLoader, setShowFullScreenLoader] = useState(false);
+  const [loaderMessage, setLoaderMessage] = useState('');
 
   // Состояния фокуса для полей
   const [focusedField, setFocusedField] = useState<string | null>(null);
@@ -37,11 +40,14 @@ export default function LoginPage(): React.JSX.Element {
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        setIsLoading(true);
+        setShowFullScreenLoader(true);
+        setLoaderMessage(t('auth.login.googleAuth'));
         
         // Получаем информацию о пользователе через Google API
         const userInfoResponse = await fetch(`https://www.googleapis.com/oauth2/v2/userinfo?access_token=${tokenResponse.access_token}`);
         const userInfo = await userInfoResponse.json();
+        
+        setLoaderMessage(t('auth.login.processingAuth'));
         
         // Создаем простой ID токен из полученных данных
         const tokenData = {
@@ -56,20 +62,24 @@ export default function LoginPage(): React.JSX.Element {
         const idToken = btoa(unescape(encodeURIComponent(JSON.stringify(tokenData))));
         
         await googleAuth(idToken);
-        navigate('/app');
+        
+        setLoaderMessage(t('auth.login.redirecting'));
+        setTimeout(() => {
+          navigate('/app');
+        }, 500);
       } catch (error) {
         console.error('Google OAuth error:', error);
-      } finally {
-        setIsLoading(false);
+        setShowFullScreenLoader(false);
       }
     },
     onError: (error) => {
       console.error('Google OAuth error:', error);
+      setShowFullScreenLoader(false);
     },
   });
 
   // GitHub OAuth login
-  const gitHubLogin = () => {
+  const gitHubLogin = async () => {
     setIsGitHubLoading(true);
     
     const clientId = 'Ov23limLdWeZyzmGnsbm';
@@ -89,7 +99,8 @@ export default function LoginPage(): React.JSX.Element {
         const { code } = event.data;
         
         try {
-          setIsLoading(true);
+          setShowFullScreenLoader(true);
+          setLoaderMessage(t('auth.login.githubAuth'));
           
           // Обмениваем код на access token через наш backend
           const response = await fetch('http://localhost:5000/api/auth/github/exchange', {
@@ -105,17 +116,22 @@ export default function LoginPage(): React.JSX.Element {
             throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
           }
           
+          setLoaderMessage(t('auth.login.processingAuth'));
+          
           const { access_token } = await response.json();
           
           // Используем access token для аутентификации
           await gitHubAuth(access_token);
           
-          navigate('/app');
-          popup?.close();
+          setLoaderMessage(t('auth.login.redirecting'));
+          setTimeout(() => {
+            navigate('/app');
+            popup?.close();
+          }, 500);
         } catch (error) {
           console.error('GitHub OAuth error:', error);
+          setShowFullScreenLoader(false);
         } finally {
-          setIsLoading(false);
           setIsGitHubLoading(false);
         }
       } else if (event.data.type === 'GITHUB_OAUTH_ERROR') {
@@ -365,21 +381,24 @@ export default function LoginPage(): React.JSX.Element {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setShowFullScreenLoader(true);
+    setLoaderMessage(t('auth.login.loggingIn'));
     
     try {
       console.log('🔐 Начинаем вход...');
       // Используем функцию login из AuthContext
       await login(formData.email, formData.password);
       
+      setLoaderMessage(t('auth.login.redirecting'));
       console.log('✅ Перенаправляем в приложение');
       // После успешного входа перенаправляем в приложение
-      navigate('/app');
+      setTimeout(() => {
+        navigate('/app');
+      }, 500);
     } catch (error) {
       console.error('❌ Ошибка входа:', error);
+      setShowFullScreenLoader(false);
       // В будущем здесь можно добавить отображение ошибок пользователю
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -845,6 +864,14 @@ export default function LoginPage(): React.JSX.Element {
           filter: 'blur(40px)'
         }}
       />
+
+      {/* Полноэкранный премиум лоадер */}
+      {showFullScreenLoader && (
+        <FullScreenPremiumLoader 
+          message={loaderMessage} 
+          size={200}
+        />
+      )}
     </div>
   );
 }

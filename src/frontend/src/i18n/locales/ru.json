@@ -31,20 +31,28 @@
       "loggingIn": "Вход в систему",
       "noAccount": "Еще нет аккаунта?",
       "registerLink": "Регистрация",
-      "contactSupport": "Связаться с поддержкой"
+      "contactSupport": "Связаться с поддержкой",
+      "googleAuth": "Аутентификация через Google...",
+      "githubAuth": "Аутентификация через GitHub...",
+      "processingAuth": "Обработка данных аутентификации...",
+      "redirecting": "Перенаправление в приложение..."
     },
     "register": {
-      "title": "Присоединяйтесь к сообществу Nebula",
-      "subtitle": "Создайте свой аккаунт и начните путешествие с нами.",
+      "title": "Регистрация",
+      "subtitle": "Создайте свой аккаунт и присоединяйтесь к нашему сообществу.",
       "usernameLabel": "Имя пользователя",
-      "emailLabel": "Email адрес",
+      "emailLabel": "Email",
       "passwordLabel": "Пароль",
       "confirmPasswordLabel": "Подтвердите пароль",
       "agreeTerms": "Я согласен с Условиями использования и Политикой конфиденциальности",
-      "registerButton": "Создать аккаунт",
-      "registering": "Создание аккаунта",
+      "registerButton": "Зарегистрироваться",
+      "registering": "Регистрация...",
       "haveAccount": "Уже есть аккаунт?",
-      "loginLink": "Войти"
+      "loginLink": "Войти",
+      "googleAuth": "Регистрация через Google...",
+      "processingAuth": "Обработка данных аутентификации...",
+      "redirecting": "Перенаправление в приложение...",
+      "redirectingToVerification": "Перенаправление на страницу верификации..."
     },
     "resetPassword": {
       "title": "Сброс пароля",

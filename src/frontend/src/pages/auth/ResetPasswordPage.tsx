@@ -4,13 +4,15 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import resetPasswordBackground from '../../assets/auth/resetPassword/backgrounds/resetPasswordBackground.png';
 import logoImage from '../../assets/auth/login/logos/logo (2).png';
+import FullScreenPremiumLoader from '../../components/ui/FullScreenPremiumLoader';
 
 export default function ResetPasswordPage(): React.JSX.Element {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [showFullScreenLoader, setShowFullScreenLoader] = useState(false);
+  const [loaderMessage, setLoaderMessage] = useState('');
   
   // Состояние для анимации появления
   const [isVisible, setIsVisible] = useState(false);
@@ -31,17 +33,25 @@ export default function ResetPasswordPage(): React.JSX.Element {
     e.preventDefault();
     if (!email.trim()) return;
 
-    setIsLoading(true);
+    setShowFullScreenLoader(true);
+    setLoaderMessage(t('auth.resetPassword.sending'));
     
     try {
       await resetPassword(email);
-      setIsSuccess(true);
+      
+      setLoaderMessage(t('auth.resetPassword.emailSent'));
+      setTimeout(() => {
+        setIsSuccess(true);
+        setShowFullScreenLoader(false);
+      }, 1000);
     } catch (error) {
       console.error('Reset password error:', error);
       // В случае ошибки все равно показываем success для безопасности
-      setIsSuccess(true);
-    } finally {
-      setIsLoading(false);
+      setLoaderMessage(t('auth.resetPassword.emailSent'));
+      setTimeout(() => {
+        setIsSuccess(true);
+        setShowFullScreenLoader(false);
+      }, 1000);
     }
   };
 
@@ -443,29 +453,16 @@ export default function ResetPasswordPage(): React.JSX.Element {
               type="submit"
               className="reset-button w-full h-12 sm:h-14 lg:h-[60px] text-white font-bold text-base sm:text-lg md:text-xl lg:text-[24px] rounded transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
-                background: isLoading 
-                  ? 'linear-gradient(90.67deg, #A8A8A8 -7.12%, #6B6B6B 114.37%)'
-                  : 'linear-gradient(90.67deg, #F6B8FD -7.12%, #316AD7 114.37%)',
+                background: 'linear-gradient(90.67deg, #F6B8FD -7.12%, #316AD7 114.37%)',
                 fontFamily: 'Helvetica, sans-serif',
                 fontWeight: 700,
                 borderRadius: '8px',
                 border: 'none',
-                cursor: isLoading ? 'not-allowed' : 'pointer'
+                cursor: 'pointer'
               }}
-              disabled={isLoading || !email.trim()}
+              disabled={!email.trim()}
             >
-              {isLoading ? (
-                <div className="flex items-center justify-center gap-2">
-                  <span>{t('auth.resetPassword.sending')}</span>
-                  <div className="loading-dots">
-                    <div className="loading-dot"></div>
-                    <div className="loading-dot"></div>
-                    <div className="loading-dot"></div>
-                  </div>
-                </div>
-              ) : (
-                t('auth.resetPassword.sendButton')
-              )}
+              {t('auth.resetPassword.sendButton')}
             </button>
           </form>
         </div>
@@ -544,6 +541,14 @@ export default function ResetPasswordPage(): React.JSX.Element {
           filter: 'blur(40px)'
         }}
       />
+
+      {/* Полноэкранный премиум лоадер */}
+      {showFullScreenLoader && (
+        <FullScreenPremiumLoader 
+          message={loaderMessage} 
+          size={200}
+        />
+      )}
     </div>
   );
 } 
