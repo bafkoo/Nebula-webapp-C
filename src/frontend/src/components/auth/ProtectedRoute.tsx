@@ -1,5 +1,6 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface ProtectedRouteProps {
@@ -17,6 +18,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 }) => {
   const { isAuthenticated, pendingVerificationEmail, isLoading } = useAuth();
   const location = useLocation();
+  const { t } = useTranslation();
 
   // Показываем загрузку пока проверяем состояние аутентификации
   if (isLoading) {
@@ -27,7 +29,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
             <div className="w-full h-full border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
           </div>
           <p className="text-white text-lg" style={{ fontFamily: 'Helvetica, sans-serif' }}>
-            Checking authentication...
+            {t('loader.checkingAuth')}
           </p>
         </div>
       </div>
@@ -52,12 +54,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Логика для страниц, требующих полной аутентификации (например, /app)
   if (requireAuth) {
-    // Если не аутентифицирован, но есть ожидание верификации - перенаправляем на верификацию
-    if (!isAuthenticated && pendingVerificationEmail) {
-      return <Navigate to="/verification" replace />;
-    }
-    
-    // Если не аутентифицирован и нет ожидания верификации - перенаправляем на логин
+    // Если не аутентифицирован - перенаправляем на логин
     if (!isAuthenticated) {
       return <Navigate to={redirectTo} state={{ from: location }} replace />;
     }

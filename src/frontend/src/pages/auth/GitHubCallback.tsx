@@ -1,6 +1,9 @@
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export default function GitHubCallback(): React.JSX.Element {
+  const { t } = useTranslation();
+  
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
@@ -56,8 +59,8 @@ export default function GitHubCallback(): React.JSX.Element {
     <div className="min-h-screen bg-[#252525] flex items-center justify-center">
       <div className="text-white text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-        <p>Обработка GitHub авторизации...</p>
-        <p className="text-sm text-gray-400 mt-2">Окно закроется автоматически</p>
+        <p>{t('auth.github.callback')}</p>
+        <p className="text-sm text-gray-400 mt-2">{t('windowWillCloseAutomatically')}</p>
       </div>
     </div>
   );

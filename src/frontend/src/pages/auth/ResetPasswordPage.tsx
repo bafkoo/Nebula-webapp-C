@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import resetPasswordBackground from '../../assets/auth/resetPassword/backgrounds/resetPasswordBackground.png';
 import logoImage from '../../assets/auth/login/logos/logo (2).png';
 
 export default function ResetPasswordPage(): React.JSX.Element {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -382,24 +384,24 @@ export default function ResetPasswordPage(): React.JSX.Element {
           {/* Header */}
           <div className="text-center space-y-4 lg:space-y-7">
             <h1 
-              className="text-white font-bold text-2xl sm:text-3xl lg:text-[40px]"
+              className="text-white font-bold text-2xl sm:text-3xl lg:text-[40px] mb-4"
               style={{ 
                 fontFamily: 'Helvetica, sans-serif',
                 fontWeight: 700,
                 lineHeight: '1.2'
               }}
             >
-              Reset Password
+              {t('auth.resetPassword.title')}
             </h1>
             <p 
-              className="text-white/80 text-base sm:text-lg lg:text-[20px] leading-relaxed max-w-[500px] mx-auto"
+              className="text-white text-base sm:text-lg lg:text-[20px] leading-relaxed max-w-[550px] mx-auto"
               style={{ 
                 fontFamily: 'Helvetica, sans-serif',
                 fontWeight: 400,
-                lineHeight: '1.3'
+                lineHeight: '1.18'
               }}
             >
-              Type your authorised email address to receive reset password link.
+              {t('auth.resetPassword.subtitle')}
             </p>
           </div>
 
@@ -416,7 +418,7 @@ export default function ResetPasswordPage(): React.JSX.Element {
                   transform: 'translateY(-50%)'
                 }}
               >
-                Email Address
+                                  {t('auth.resetPassword.emailLabel')}
               </div>
               <input
                 type="email"
@@ -454,7 +456,7 @@ export default function ResetPasswordPage(): React.JSX.Element {
             >
               {isLoading ? (
                 <div className="flex items-center justify-center gap-2">
-                  <span>Sending</span>
+                  <span>{t('auth.resetPassword.sending')}</span>
                   <div className="loading-dots">
                     <div className="loading-dot"></div>
                     <div className="loading-dot"></div>
@@ -462,7 +464,7 @@ export default function ResetPasswordPage(): React.JSX.Element {
                   </div>
                 </div>
               ) : (
-                'Send Reset Password Link'
+                t('auth.resetPassword.sendButton')
               )}
             </button>
           </form>
@@ -487,7 +489,7 @@ export default function ResetPasswordPage(): React.JSX.Element {
                 fontWeight: 400,
                 fontSize: '16px'
               }}>
-              Remember your password? 
+              {t('auth.resetPassword.rememberPassword')} 
             </span>
             <button 
               className="font-bold text-white hover:text-gray-300 transition-colors ml-1"
@@ -498,7 +500,7 @@ export default function ResetPasswordPage(): React.JSX.Element {
               }}
               onClick={() => navigate('/login')}
             >
-              Login
+              {t('auth.resetPassword.loginLink')}
             </button>
           </div>
           <button 
@@ -509,7 +511,7 @@ export default function ResetPasswordPage(): React.JSX.Element {
               fontSize: '16px',
               textDecoration: 'underline'
             }}>
-            Contact Support
+            {t('auth.login.contactSupport')}
           </button>
         </div>
       </div>

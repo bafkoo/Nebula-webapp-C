@@ -73,9 +73,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
    
   const login = async (email: string, password: string) => {
+    console.log('🔐 Вход для:', email);
+    
+    setAuthState(prev => ({ ...prev, isLoading: true }));
+    
     try {
-      setAuthState(prev => ({ ...prev, isLoading: true }));
-
       // API автоматически сохранит токен через TokenManager
       const response = await apiClient.login({ email, password });
 
@@ -94,9 +96,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         user,
         isAuthenticated: true, // JWT автоматически валидируется
         isLoading: false,
-        pendingVerificationEmail: user.isEmailVerified ? null : user.email
+        pendingVerificationEmail: null // При входе по паролю не показываем верификацию
       });
+      
+      console.log('✅ Вход успешен');
     } catch (error) {
+      console.error('❌ Ошибка входа:', error);
       setAuthState(prev => ({ ...prev, isLoading: false }));
       throw error;
     }

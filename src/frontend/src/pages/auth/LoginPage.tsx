@@ -2,11 +2,13 @@ import { CheckIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGoogleLogin } from '@react-oauth/google';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from "../../contexts/AuthContext";
 import gradientMainBg from "../../assets/auth/login/backgrounds/gradient-main.webp";
 import logoImage from "../../assets/auth/login/logos/logo (2).png";
 
 export default function LoginPage(): React.JSX.Element {
+  const { t } = useTranslation();
   // Состояние формы
   const [formData, setFormData] = useState({
     email: "",
@@ -366,13 +368,15 @@ export default function LoginPage(): React.JSX.Element {
     setIsLoading(true);
     
     try {
+      console.log('🔐 Начинаем вход...');
       // Используем функцию login из AuthContext
       await login(formData.email, formData.password);
       
+      console.log('✅ Перенаправляем в приложение');
       // После успешного входа перенаправляем в приложение
       navigate('/app');
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('❌ Ошибка входа:', error);
       // В будущем здесь можно добавить отображение ошибок пользователю
     } finally {
       setIsLoading(false);
@@ -461,10 +465,10 @@ export default function LoginPage(): React.JSX.Element {
           {/* Header Section */}
           <div className="text-center mb-14 w-full max-w-[548px] mx-auto">
             <h1 className="text-white text-4xl font-bold mb-6 relative z-50">
-              Welcome back, Trailblazer!
+              {t('auth.login.title')}
             </h1>
             <p className="text-[#ABABAB] text-xl relative z-50">
-              We are excited to have your back. Log in now and access your account.
+              {t('auth.login.subtitle')}
             </p>
           </div>
 
@@ -490,7 +494,7 @@ export default function LoginPage(): React.JSX.Element {
                   <div 
                     className="absolute flex items-center justify-center"
                     style={{
-                      width: '133px',
+                      width: '60px',
                       height: '22px',
                       left: '12px',
                       top: '-5px',
@@ -507,7 +511,7 @@ export default function LoginPage(): React.JSX.Element {
                         fontWeight: 400,
                         color: focusedField === 'email' ? '#7177FF' : '#ABABAB'
                       }}>
-                      Username or Email
+                      {t('auth.login.emailLabel')}
                     </label>
                   </div>
                   
@@ -561,7 +565,7 @@ export default function LoginPage(): React.JSX.Element {
                   {/* Password Input */}
                   <input
                     type={showPassword ? "text" : "password"}
-                    placeholder="Password"
+                    placeholder={t('auth.login.passwordLabel')}
                     className="absolute bg-transparent font-normal border-none outline-none text-left z-20 transition-colors duration-200"
                     style={{ 
                       fontFamily: 'Helvetica, sans-serif',
@@ -628,10 +632,11 @@ export default function LoginPage(): React.JSX.Element {
                         }}
                         onClick={() => handleInputChange('rememberMe', !formData.rememberMe)}
                       >
-                        Remember me
+                        {t('auth.login.rememberMe')}
                       </label>
                     </div>
                     <button 
+                      type="button"
                       className="text-[#ABABAB] font-normal hover:text-gray-300 transition-colors text-right"
                       style={{ 
                         fontFamily: 'Helvetica, sans-serif',
@@ -641,7 +646,7 @@ export default function LoginPage(): React.JSX.Element {
                       }}
                       onClick={handleForgotPassword}
                     >
-                      Forgot your password?
+                      {t('auth.login.forgotPassword')}
                     </button>
                   </div>
                 </div>
@@ -666,7 +671,7 @@ export default function LoginPage(): React.JSX.Element {
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center gap-2">
-                    <span>Logging in</span>
+                    <span>{t('auth.login.loggingIn')}</span>
                     <div className="loading-dots">
                       <div className="loading-dot"></div>
                       <div className="loading-dot"></div>
@@ -674,7 +679,7 @@ export default function LoginPage(): React.JSX.Element {
                     </div>
                   </div>
                 ) : (
-                  'Log In'
+                  t('auth.login.loginButton')
                 )}
               </button>
             </div>
@@ -700,7 +705,7 @@ export default function LoginPage(): React.JSX.Element {
                     fontFamily: 'Helvetica, sans-serif',
                     fontWeight: 400
                   }}>
-                  or
+                  {t('common.or')}
                 </span>
               </div>
             </div>
@@ -709,6 +714,7 @@ export default function LoginPage(): React.JSX.Element {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-[12px] w-full">
               {/* Google Button */}
               <button
+                type="button"
                 className="social-button flex flex-row justify-center items-center h-12 sm:h-14 lg:h-[60px] border bg-transparent rounded p-2 sm:p-3"
                 style={{ 
                   borderWidth: '1px',
@@ -725,6 +731,7 @@ export default function LoginPage(): React.JSX.Element {
               
               {/* GitHub Button */}
               <button
+                type="button"
                 className="social-button flex flex-row justify-center items-center h-12 sm:h-14 lg:h-[60px] border bg-transparent rounded p-2 sm:p-3"
                 style={{ 
                   borderWidth: '1px',
@@ -747,6 +754,7 @@ export default function LoginPage(): React.JSX.Element {
               
               {/* Apple Button */}
               <button
+                type="button"
                 className="social-button flex flex-row justify-center items-center h-12 sm:h-14 lg:h-[60px] border bg-transparent rounded p-2 sm:p-3"
                 style={{ 
                   borderWidth: '1px',
@@ -783,7 +791,7 @@ export default function LoginPage(): React.JSX.Element {
                 fontWeight: 400,
                 fontSize: '16px'
               }}>
-              Don't have an account yet? 
+              {t('auth.login.noAccount')} 
             </span>
             <button 
               className="font-bold text-white hover:text-gray-300 transition-colors ml-1"
@@ -794,7 +802,7 @@ export default function LoginPage(): React.JSX.Element {
               }}
               onClick={() => navigate('/register')}
             >
-              Register
+              {t('auth.login.registerLink')}
             </button>
           </div>
           <button 
@@ -805,7 +813,7 @@ export default function LoginPage(): React.JSX.Element {
               fontSize: '16px',
               textDecoration: 'underline'
             }}>
-            Contact Support
+            {t('auth.login.contactSupport')}
           </button>
         </div>
       </div>

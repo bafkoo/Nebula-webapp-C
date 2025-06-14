@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckIcon, EyeIcon, EyeOffIcon } from 'lucide-react';
 import { useGoogleLogin } from '@react-oauth/google';
+import { useTranslation } from 'react-i18next';
 import backGroundRegister from '../../assets/auth/register/backgrounds/backGroundRegister.png';
 import logoImage from '../../assets/auth/login/logos/logo (2).png';
 import { useAuth } from '../../contexts/AuthContext';
@@ -15,6 +16,7 @@ interface FormData {
 }
 
 export default function RegisterPage(): React.JSX.Element {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<FormData>({
     username: '',
     email: '',
@@ -459,7 +461,7 @@ export default function RegisterPage(): React.JSX.Element {
                 lineHeight: '1.2'
               }}
             >
-              Register
+              {t('auth.register.title')}
             </h1>
             <p 
               className="text-white text-base sm:text-lg lg:text-[20px] leading-relaxed max-w-[550px] mx-auto"
@@ -469,7 +471,7 @@ export default function RegisterPage(): React.JSX.Element {
                 lineHeight: '1.18'
               }}
             >
-              Ready to become part of the exclusive club? Fill in the details below, and let the journey begin!
+              {t('auth.register.subtitle')}
             </p>
           </div>
 
@@ -488,7 +490,7 @@ export default function RegisterPage(): React.JSX.Element {
                     transform: 'translateY(-50%)'
                   }}
                 >
-                  Username
+                  {t('auth.register.usernameLabel')}
                 </div>
                 <input
                   type="text"
@@ -519,7 +521,7 @@ export default function RegisterPage(): React.JSX.Element {
                     transform: 'translateY(-50%)'
                   }}
                 >
-                  Email Address
+                  {t('auth.register.emailLabel')}
                 </div>
                 <input
                   type="email"
@@ -550,7 +552,7 @@ export default function RegisterPage(): React.JSX.Element {
                     transform: 'translateY(-50%)'
                   }}
                 >
-                  Password
+                  {t('auth.register.passwordLabel')}
                 </div>
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -598,7 +600,7 @@ export default function RegisterPage(): React.JSX.Element {
                     transform: 'translateY(-50%)'
                   }}
                 >
-                  Confirm Password
+                  {t('auth.register.confirmPasswordLabel')}
                 </div>
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
@@ -675,13 +677,13 @@ export default function RegisterPage(): React.JSX.Element {
                   }}
                   onClick={() => handleInputChange('agreeToTerms', !formData.agreeToTerms)}
                 >
-                  I agree to the{' '}
-                  <span className="text-[#7177FF] underline hover:text-purple-300 transition-colors">
-                    Terms of Service
+                  Я согласен с{' '}
+                  <span className="text-[#7177FF] underline hover:text-purple-300 transition-colors cursor-pointer">
+                    Условиями использования
                   </span>{' '}
-                  and{' '}
-                  <span className="text-[#7177FF] underline hover:text-purple-300 transition-colors">
-                    Privacy Policy
+                  и{' '}
+                  <span className="text-[#7177FF] underline hover:text-purple-300 transition-colors cursor-pointer">
+                    Политикой конфиденциальности
                   </span>
                 </label>
               </div>
@@ -705,7 +707,7 @@ export default function RegisterPage(): React.JSX.Element {
             >
               {isLoading ? (
                 <div className="flex items-center justify-center gap-2">
-                  <span>Creating account</span>
+                  <span>{t('auth.register.registering')}</span>
                   <div className="loading-dots">
                     <div className="loading-dot"></div>
                     <div className="loading-dot"></div>
@@ -713,7 +715,7 @@ export default function RegisterPage(): React.JSX.Element {
                   </div>
                 </div>
               ) : (
-                'Register'
+                t('auth.register.registerButton')
               )}
             </button>
           </form>
@@ -739,7 +741,7 @@ export default function RegisterPage(): React.JSX.Element {
                   fontFamily: 'Helvetica, sans-serif',
                   fontWeight: 400
                 }}>
-                or
+                {t('common.or')}
               </span>
             </div>
           </div>
@@ -809,7 +811,7 @@ export default function RegisterPage(): React.JSX.Element {
                 fontWeight: 400,
                 fontSize: '16px'
               }}>
-              Already have an account? 
+              {t('auth.register.haveAccount')} 
             </span>
             <button 
               className="font-bold text-white hover:text-gray-300 transition-colors ml-1"
@@ -820,7 +822,7 @@ export default function RegisterPage(): React.JSX.Element {
               }}
               onClick={() => navigate('/login')}
             >
-              Login
+              {t('auth.register.loginLink')}
             </button>
           </div>
           <button 
@@ -831,7 +833,7 @@ export default function RegisterPage(): React.JSX.Element {
               fontSize: '16px',
               textDecoration: 'underline'
             }}>
-            Contact Support
+            {t('auth.login.contactSupport')}
           </button>
         </div>
       </div>

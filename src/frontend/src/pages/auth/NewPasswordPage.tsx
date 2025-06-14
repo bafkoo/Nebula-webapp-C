@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { EyeIcon, EyeOffIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 
 // Import images - используем правильный фон для newPassword
@@ -31,6 +32,7 @@ export default function NewPasswordPage(): React.JSX.Element {
   const [searchParams] = useSearchParams();
   const { token: paramToken } = useParams();
   const { updatePassword } = useAuth();
+  const { t } = useTranslation();
   
   const [formData, setFormData] = useState<FormData>({
     password: '',
@@ -125,16 +127,16 @@ export default function NewPasswordPage(): React.JSX.Element {
 
     // Password validation
     if (!formData.password) {
-      newErrors.password = 'Пароль обязателен';
+      newErrors.password = t('errors.passwordRequired');
     } else if (!passwordStrength.isValid) {
-      newErrors.password = 'Пароль не соответствует требованиям';
+      newErrors.password = t('errors.passwordRequirements');
     }
 
     // Confirm password validation
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Подтвердите пароль';
+      newErrors.confirmPassword = t('errors.confirmPasswordRequired');
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Пароли не совпадают';
+      newErrors.confirmPassword = t('errors.passwordsDoNotMatch');
     }
 
     setErrors(newErrors);
@@ -151,7 +153,7 @@ export default function NewPasswordPage(): React.JSX.Element {
 
     try {
       if (!resetToken) {
-        throw new Error('Токен сброса не найден');
+        throw new Error(t('errors.resetTokenNotFound'));
       }
       
       await updatePassword(resetToken, formData.password);
@@ -159,13 +161,13 @@ export default function NewPasswordPage(): React.JSX.Element {
       // Success - navigate to login with success message
       navigate('/login', { 
         state: { 
-          message: 'Пароль успешно изменен! Войдите с новым паролем.',
+          message: t('success.passwordChanged'),
           type: 'success'
         }
       });
     } catch (error: unknown) {
       setErrors({ 
-        general: error instanceof Error ? error.message : 'Не удалось изменить пароль. Попробуйте снова или запросите новую ссылку для сброса.' 
+        general: error instanceof Error ? error.message : t('errors.unableToChangePassword') 
       });
     } finally {
       setIsLoading(false);
@@ -408,7 +410,7 @@ export default function NewPasswordPage(): React.JSX.Element {
               className="text-white text-lg"
               style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
             >
-              Проверяем ссылку для сброса...
+              {t('checkingLink')}
             </p>
           </div>
         </div>
@@ -479,7 +481,7 @@ export default function NewPasswordPage(): React.JSX.Element {
                   lineHeight: '1.2'
                 }}
               >
-                Недействительная ссылка
+                {t('invalidLink')}
               </h1>
               
               <p 
@@ -490,7 +492,7 @@ export default function NewPasswordPage(): React.JSX.Element {
                   lineHeight: '1.3'
                 }}
               >
-                Эта ссылка для сброса пароля недействительна или истекла. Пожалуйста, запросите новую ссылку для сброса пароля.
+                {t('invalidLinkDescription')}
               </p>
 
               <div className="space-y-4 pt-4">
@@ -506,7 +508,7 @@ export default function NewPasswordPage(): React.JSX.Element {
                     cursor: 'pointer'
                   }}
                 >
-                  Запросить новую ссылку
+                  {t('requestNewLink')}
                 </button>
 
                 <button
@@ -519,7 +521,7 @@ export default function NewPasswordPage(): React.JSX.Element {
                     textDecoration: 'underline'
                   }}
                 >
-                  Вернуться к входу
+                  {t('returnToLogin')}
                 </button>
               </div>
             </div>
@@ -586,7 +588,7 @@ export default function NewPasswordPage(): React.JSX.Element {
                 fontWeight: 700
               }}
             >
-              Создать новый пароль
+              {t('createNewPassword')}
             </h1>
             <p 
               className="text-[#ABABAB] text-xl relative z-50"
@@ -595,7 +597,7 @@ export default function NewPasswordPage(): React.JSX.Element {
                 fontWeight: 400
               }}
             >
-              Введите новый надежный пароль. Ваш пароль должен содержать: одну заглавную и одну строчную букву, один специальный символ и минимум 8 символов.
+              {t('passwordRequirements')}
             </p>
           </div>
 
@@ -639,14 +641,14 @@ export default function NewPasswordPage(): React.JSX.Element {
                           fontWeight: 400,
                           color: errors.password ? '#EF4444' : (focusedField === 'password' ? '#7177FF' : '#ABABAB')
                         }}>
-                        Новый пароль
+                        {t('newPassword')}
                       </label>
                     </div>
                     
                     {/* Password Input */}
                     <input
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Введите новый пароль"
+                      placeholder={t('enterNewPassword')}
                       className="absolute bg-transparent text-white font-normal border-none outline-none text-left z-20 transition-colors duration-200"
                       style={{ 
                         fontFamily: 'Helvetica, sans-serif',
@@ -696,7 +698,7 @@ export default function NewPasswordPage(): React.JSX.Element {
                 {/* Password Strength Indicators */}
                 {formData.password && (
                   <div className="space-y-2">
-                    <p className="text-white/70 text-sm font-medium">Требования к паролю:</p>
+                    <p className="text-white/70 text-sm font-medium">{t('passwordRequirements')}:</p>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div className="flex items-center">
                         <div 
@@ -704,7 +706,7 @@ export default function NewPasswordPage(): React.JSX.Element {
                           style={{ backgroundColor: getStrengthColor(passwordStrength.hasMinLength) }}
                         />
                         <span style={{ color: getStrengthColor(passwordStrength.hasMinLength) }}>
-                          8+ символов
+                          8+ {t('symbols')}
                         </span>
                       </div>
                       <div className="flex items-center">
@@ -713,7 +715,7 @@ export default function NewPasswordPage(): React.JSX.Element {
                           style={{ backgroundColor: getStrengthColor(passwordStrength.hasUpperCase) }}
                         />
                         <span style={{ color: getStrengthColor(passwordStrength.hasUpperCase) }}>
-                          Заглавная буква
+                          {t('uppercaseLetter')}
                         </span>
                       </div>
                       <div className="flex items-center">
@@ -722,7 +724,7 @@ export default function NewPasswordPage(): React.JSX.Element {
                           style={{ backgroundColor: getStrengthColor(passwordStrength.hasLowerCase) }}
                         />
                         <span style={{ color: getStrengthColor(passwordStrength.hasLowerCase) }}>
-                          Строчная буква
+                          {t('lowercaseLetter')}
                         </span>
                       </div>
                       <div className="flex items-center">
@@ -731,7 +733,7 @@ export default function NewPasswordPage(): React.JSX.Element {
                           style={{ backgroundColor: getStrengthColor(passwordStrength.hasSpecialChar) }}
                         />
                         <span style={{ color: getStrengthColor(passwordStrength.hasSpecialChar) }}>
-                          Спец. символ
+                          {t('specialCharacter')}
                         </span>
                       </div>
                     </div>
@@ -772,14 +774,14 @@ export default function NewPasswordPage(): React.JSX.Element {
                         fontWeight: 400,
                         color: errors.confirmPassword ? '#EF4444' : (focusedField === 'confirmPassword' ? '#7177FF' : '#ABABAB')
                       }}>
-                      Подтвердите пароль
+                      {t('confirmPassword')}
                     </label>
                   </div>
                   
                   {/* Confirm Password Input */}
                   <input
                     type={showConfirmPassword ? 'text' : 'password'}
-                    placeholder="Повторите новый пароль"
+                    placeholder={t('enterConfirmPassword')}
                     className="absolute bg-transparent text-white font-normal border-none outline-none text-left z-20 transition-colors duration-200"
                     style={{ 
                       fontFamily: 'Helvetica, sans-serif',
@@ -859,7 +861,7 @@ export default function NewPasswordPage(): React.JSX.Element {
                     <div className="loading-dot"></div>
                   </div>
                 ) : (
-                  'Подтвердить изменения'
+                  t('confirmChanges')
                 )}
               </button>
 
@@ -877,7 +879,7 @@ export default function NewPasswordPage(): React.JSX.Element {
                   }}
                   disabled={isLoading}
                 >
-                  Вернуться к входу
+                  {t('returnToLogin')}
                 </button>
               </div>
             </div>

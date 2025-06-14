@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 // Import images
 import logoImage from '../../assets/auth/login/logos/logo (2).png';
@@ -16,6 +17,7 @@ interface FormErrors {
 const VerificationPage: React.FC = () => {
   const navigate = useNavigate();
   const { verifyEmail, resendVerificationCode, pendingVerificationEmail } = useAuth();
+  const { t } = useTranslation();
   
   // Input refs for auto-focus
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -342,7 +344,7 @@ const VerificationPage: React.FC = () => {
                 lineHeight: '1.2'
               }}
             >
-              Verify your code
+              {t('verifyYourCode')}
             </h1>
             <p 
               className="text-white text-base sm:text-lg lg:text-[20px] leading-relaxed max-w-[550px] mx-auto"
@@ -352,7 +354,7 @@ const VerificationPage: React.FC = () => {
                 lineHeight: '1.18'
               }}
             >
-              Enter the passcode you just received on your email address ending with{' '}
+              {t('enterThePasscodeYouJustReceivedOnYourEmailAddressEndingWith')}
               <span className="text-white font-medium">{maskedEmail}</span>
             </p>
           </div>
@@ -445,7 +447,7 @@ const VerificationPage: React.FC = () => {
                   fontWeight: 400
                 }}
               >
-                Didn't receive the code?
+                {t('didntReceiveTheCode')}
               </p>
               
               {canResend ? (
@@ -469,7 +471,7 @@ const VerificationPage: React.FC = () => {
                     fontWeight: 400
                   }}
                 >
-                  Resend code in {resendTimer}s
+                  {t('resendCodeIn')} {resendTimer}s
                 </p>
               )}
             </div>
@@ -486,7 +488,7 @@ const VerificationPage: React.FC = () => {
                 }}
                 disabled={isLoading}
               >
-                Back to Login
+                {t('backToLogin')}
               </button>
             </div>
           </form>
