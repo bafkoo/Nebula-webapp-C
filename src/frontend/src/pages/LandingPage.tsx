@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import logoImage from '../assets/auth/login/logos/logo (2).png';
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isVisible, setIsVisible] = useState(false);
   const [activeFeature, setActiveFeature] = useState(0);
@@ -29,7 +31,13 @@ const LandingPage: React.FC = () => {
   }, []);
 
   const handleLogin = () => {
-    navigate('/login');
+    if (isAuthenticated) {
+      // Если пользователь уже залогинен, переходим в приложение
+      navigate('/app');
+    } else {
+      // Если не залогинен, переходим на страницу логина
+      navigate('/login');
+    }
   };
 
   const handleTryFree = () => {
@@ -140,7 +148,9 @@ const LandingPage: React.FC = () => {
             onClick={handleLogin}
             className="relative border-2 border-transparent bg-gradient-to-r from-[#7177FF] to-[#F6B8FD] text-white px-8 py-3 rounded-xl font-semibold text-lg overflow-hidden group transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-[#7177FF]/50"
           >
-            <span className="relative z-10">Войти</span>
+            <span className="relative z-10">
+              {isAuthenticated ? 'В приложение' : 'Войти'}
+            </span>
             <div className="absolute inset-0 bg-gradient-to-r from-[#F6B8FD] to-[#7177FF] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </button>
         </div>

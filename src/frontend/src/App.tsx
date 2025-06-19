@@ -1,6 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { GoogleOAuthProvider } from '@react-oauth/google'
-import { useTranslation } from 'react-i18next'
 import './App.css'
 
 // Auth Context
@@ -8,7 +7,6 @@ import { AuthProvider } from './contexts/AuthContext'
 
 // Components
 import ProtectedRoute from './components/auth/ProtectedRoute'
-import LanguageSwitcher from './components/ui/LanguageSwitcher'
 
 // Auth Pages
 import LoginPage from './pages/auth/LoginPage'
@@ -20,28 +18,10 @@ import GitHubCallback from './pages/auth/GitHubCallback'
 
 // Main Pages
 import LandingPage from './pages/LandingPage'
+import MePage from './pages/MePage'
 
 // UI Components
 import LoaderExample from './components/ui/LoaderExample'
-
-// Placeholder for main application
-const MainApplication = () => {
-  const { t } = useTranslation();
-  
-  return (
-    <div className="min-h-screen bg-[#252525] flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-white text-4xl font-bold mb-4">{t('app.welcome')}</h1>
-        <p className="text-white/70 text-lg">{t('app.welcomeMessage')}</p>
-        
-        {/* Переключатель языка */}
-        <div className="mt-8 flex justify-center">
-          <LanguageSwitcher />
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "26914621923-ljnfmjat63o7gp3b9ornl1n65ho4g12v.apps.googleusercontent.com";
 
@@ -65,22 +45,33 @@ function App() {
             {/* Demo Route */}
             <Route path="/loader-demo" element={<LoaderExample />} />
             
+            {/* Temporary test route for MePage */}
+            <Route path="/me-test" element={<MePage />} />
+            
+            {/* Protected Chat Routes */}
+            <Route 
+              path="/app" 
+              element={
+                <ProtectedRoute>
+                  <Navigate to="/channels/me" replace />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/channels/me" 
+              element={
+                <ProtectedRoute>
+                  <MePage />
+                </ProtectedRoute>
+              } 
+            />
+            
             {/* Protected Verification Route - требует состояния ожидания верификации */}
             <Route 
               path="/verification" 
               element={
                 <ProtectedRoute requireVerificationPending={true}>
                   <VerificationPage />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Protected App Routes - требует полной аутентификации */}
-            <Route 
-              path="/app" 
-              element={
-                <ProtectedRoute requireAuth={true}>
-                  <MainApplication />
                 </ProtectedRoute>
               } 
             />
