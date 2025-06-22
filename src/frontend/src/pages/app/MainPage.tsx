@@ -1,40 +1,38 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { MainLayout } from '../../components/app/layout/MainLayout';
-import { WelcomeSection } from '../../components/app/common/WelcomeSection';
-import { QuickActions } from '../../components/app/common/QuickActions';
+import { Sidebar } from '../../components/app/sidebar/Sidebar';
+import { MainArea } from '../../components/app/main/MainArea';
+import { GamingLobbiesWidget } from '../../components/app/dashboard/widgets/GamingLobbiesWidget';
+import { StatsAchievementsWidget } from '../../components/app/dashboard/widgets/StatsAchievementsWidget';
+import { NewsUpdatesWidget } from '../../components/app/dashboard/widgets/NewsUpdatesWidget';
+import { RecommendationsWidget } from '../../components/app/dashboard/widgets/RecommendationsWidget';
+import { QuickSettingsWidget } from '../../components/app/dashboard/widgets/QuickSettingsWidget';
+import { EventsTournamentsWidget } from '../../components/app/dashboard/widgets/EventsTournamentsWidget';
 
-const MainPage: React.FC = () => {
-  const { user, isAuthenticated, isLoading } = useAuth();
-
-  // Показываем загрузку пока проверяем авторизацию
-  if (isLoading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Загрузка...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Перенаправляем на логин если не авторизован
-  if (!isAuthenticated || !user) {
-    return <Navigate to="/login" replace />;
-  }
-
+export const MainPage: React.FC = () => {
   return (
-    <MainLayout>
-      <div className="h-full overflow-y-auto">
-        <div className="max-w-4xl mx-auto p-6 space-y-6">
-          <WelcomeSection />
-          <QuickActions />
+    <div className="min-h-screen bg-background text-foreground flex">
+      {/* Sidebar */}
+      <Sidebar />
+      
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col">
+        <MainArea />
+        
+        {/* Dashboard Widgets Grid */}
+        <div className="flex-1 p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            {/* Первый ряд */}
+            <GamingLobbiesWidget />
+            <StatsAchievementsWidget />
+            <NewsUpdatesWidget />
+            
+            {/* Второй ряд */}
+            <RecommendationsWidget />
+            <QuickSettingsWidget />
+            <EventsTournamentsWidget />
+          </div>
         </div>
       </div>
-    </MainLayout>
+    </div>
   );
-};
-
-export default MainPage; 
+}; 

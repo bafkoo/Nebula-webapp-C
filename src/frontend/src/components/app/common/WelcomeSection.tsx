@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Card } from '../../ui/Card';
-import { SparklesIcon } from '../../icons/Icons';
+import { SparklesIcon } from '../../icons';
 
 export const WelcomeSection: React.FC = () => {
   const { user } = useAuth();

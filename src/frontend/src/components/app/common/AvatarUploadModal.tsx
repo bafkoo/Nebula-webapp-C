@@ -4,7 +4,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { Card } from '../../ui/Card';
 import { Button } from '../../ui/Button';
 import { Avatar } from '../../ui/Avatar';
-import { UploadIcon, BanIcon, CloseIcon } from '../../icons/Icons';
+import { UploadIcon, BanIcon, CloseIcon } from '../../icons';
 
 interface AvatarUploadModalProps {
   isOpen: boolean;

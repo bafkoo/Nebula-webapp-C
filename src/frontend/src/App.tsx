@@ -18,7 +18,7 @@ import GitHubCallback from './pages/auth/GitHubCallback'
 
 // Main Pages
 import LandingPage from './pages/LandingPage'
-import IconsDemo from './pages/IconsDemo'
+import DashboardIconsDemo from './pages/DashboardIconsDemo'
 import MainPage from './pages/app/MainPage'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "26914621923-ljnfmjat63o7gp3b9ornl1n65ho4g12v.apps.googleusercontent.com";
@@ -33,7 +33,10 @@ function App() {
             <Route path="/" element={<LandingPage />} />
             
             {/* Icons Demo */}
-            <Route path="/icons" element={<IconsDemo />} />
+            <Route path="/icons" element={<DashboardIconsDemo />} />
+            <Route path="/dashboard-icons" element={<DashboardIconsDemo />} />
+            <Route path="/dashboard-icons-demo" element={<DashboardIconsDemo />} />
+            <Route path="/demo" element={<DashboardIconsDemo />} />
             
             {/* Public Auth Routes */}
             <Route path="/login" element={<LoginPage />} />

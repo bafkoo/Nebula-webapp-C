@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { cn } from '../../lib/utils';
-import { AnonymousIcon } from '../icons/Icons';
+import { AnonymousIcon } from '../icons';
 
 interface AvatarProps {
   /** URL изображения аватара */

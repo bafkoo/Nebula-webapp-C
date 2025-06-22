@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useAppStore } from '../../../stores/appStore';
-import { MenuIcon, SettingsIcon, NotificationIcon } from '../../icons/Icons';
+import { MenuIcon, SettingsIcon, NotificationIcon } from '../../icons';
 
 export const Header: React.FC = () => {
   const { user } = useAuth();

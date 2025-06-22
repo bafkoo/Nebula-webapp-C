@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from '../../ui/Card';
 import { Button } from '../../ui/Button';
-import { AddFriendIcon, GroupUsersIcon, CallIcon, SettingsIcon } from '../../icons/Icons';
+import { AddFriendIcon, GroupUsersIcon, CallIcon, SettingsIcon } from '../../icons';
 
 interface QuickAction {
   id: string;

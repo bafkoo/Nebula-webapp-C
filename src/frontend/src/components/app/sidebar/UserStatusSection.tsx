@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Avatar } from '../../ui/Avatar';
 import { AvatarUploadModal } from '../common/AvatarUploadModal';
-import { SettingsIcon, OnlineStatusIcon, AwayStatusIcon, BusyStatusIcon, OfflineStatusIcon } from '../../icons/Icons';
+import { SettingsIcon, OnlineStatusIcon, AwayStatusIcon, BusyStatusIcon, OfflineStatusIcon } from '../../icons';
 
 interface UserStatusSectionProps {
   collapsed: boolean;

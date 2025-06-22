@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAppStore } from '../../../stores/appStore';
 import { cn } from '../../../lib/utils';
-import { HomeIcon, GroupUsersIcon, AddIcon } from '../../icons/Icons';
+import { HomeIcon, GroupUsersIcon, AddIcon } from '../../icons';
 import { UserStatusSection } from './UserStatusSection';
 
 export const Sidebar: React.FC = () => {
