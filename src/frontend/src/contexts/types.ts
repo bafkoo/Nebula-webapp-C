@@ -4,6 +4,9 @@ export interface User {
   username: string;
   email: string;
   isEmailVerified: boolean;
+  // Дополнительные поля для приложения
+  avatar?: string;
+  isOnline?: boolean;
 }
 
 export interface AuthState {
