@@ -380,6 +380,25 @@ const LandingPage: React.FC = () => {
             </span>
           </div>
           
+          {/* Демо-ссылки */}
+          <div className="mb-8">
+            <p className="text-[#ABABAB] mb-4">Демо-страницы компонентов:</p>
+            <div className="flex justify-center gap-6">
+              <button 
+                onClick={() => navigate('/discord-icons')}
+                className="text-blue-400 hover:text-blue-300 transition-colors duration-300 underline"
+              >
+                Discord Icons Demo
+              </button>
+              <button 
+                onClick={() => navigate('/my-account-icons')}
+                className="text-purple-400 hover:text-purple-300 transition-colors duration-300 underline"
+              >
+                My Account Icons Demo
+              </button>
+            </div>
+          </div>
+          
           <p className="text-[#ABABAB] mb-8">
             © 2024 Nebula. Все права защищены. Создано с ❤️ для лучшего общения.
           </p>

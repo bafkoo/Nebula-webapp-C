@@ -18,10 +18,8 @@ import GitHubCallback from './pages/auth/GitHubCallback'
 
 // Main Pages
 import LandingPage from './pages/LandingPage'
-import MePage from './pages/MePage'
-
-// UI Components
-import LoaderExample from './components/ui/LoaderExample'
+import IconsDemo from './pages/IconsDemo'
+import MainPage from './pages/app/MainPage'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "26914621923-ljnfmjat63o7gp3b9ornl1n65ho4g12v.apps.googleusercontent.com";
 
@@ -34,6 +32,9 @@ function App() {
             {/* Landing Page */}
             <Route path="/" element={<LandingPage />} />
             
+            {/* Icons Demo */}
+            <Route path="/icons" element={<IconsDemo />} />
+            
             {/* Public Auth Routes */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
@@ -42,36 +43,22 @@ function App() {
             <Route path="/reset-password/:token" element={<NewPasswordPage />} />
             <Route path="/auth/github/callback" element={<GitHubCallback />} />
             
-            {/* Demo Route */}
-            <Route path="/loader-demo" element={<LoaderExample />} />
-            
-            {/* Temporary test route for MePage */}
-            <Route path="/me-test" element={<MePage />} />
-            
-            {/* Protected Chat Routes */}
-            <Route 
-              path="/app" 
-              element={
-                <ProtectedRoute>
-                  <Navigate to="/channels/me" replace />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/channels/me" 
-              element={
-                <ProtectedRoute>
-                  <MePage />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Protected Verification Route - требует состояния ожидания верификации */}
+            {/* Protected Verification Route */}
             <Route 
               path="/verification" 
               element={
                 <ProtectedRoute requireVerificationPending={true}>
                   <VerificationPage />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Protected Main App Route */}
+            <Route 
+              path="/app" 
+              element={
+                <ProtectedRoute requireAuth={true}>
+                  <MainPage />
                 </ProtectedRoute>
               } 
             />

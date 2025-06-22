@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next';
 import backGroundRegister from '../../assets/auth/register/backgrounds/backGroundRegister.png';
 import logoImage from '../../assets/auth/login/logos/logo (2).png';
 import { useAuth } from '../../contexts/AuthContext';
-import FullScreenPremiumLoader from '../../components/ui/FullScreenPremiumLoader';
 
 interface FormData {
   username: string;
@@ -869,10 +868,24 @@ export default function RegisterPage(): React.JSX.Element {
 
       {/* Полноэкранный премиум лоадер */}
       {showFullScreenLoader && (
-        <FullScreenPremiumLoader 
-          message={loaderMessage} 
-          size={200}
-        />
+        <div 
+          className="fixed inset-0 flex items-center justify-center"
+          style={{
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 9999
+          }}
+        >
+          <div className="bg-white p-8 rounded-lg">
+            <p className="text-center text-base font-bold mb-4">{loaderMessage}</p>
+            <div className="flex justify-center">
+              <div className="loading-dots">
+                <div className="loading-dot"></div>
+                <div className="loading-dot"></div>
+                <div className="loading-dot"></div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

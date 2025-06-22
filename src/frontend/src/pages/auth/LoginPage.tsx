@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { useGoogleLogin } from '@react-oauth/google';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from "../../contexts/AuthContext";
-import FullScreenPremiumLoader from "../../components/ui/FullScreenPremiumLoader";
 import gradientMainBg from "../../assets/auth/login/backgrounds/gradient-main.webp";
 import logoImage from "../../assets/auth/login/logos/logo (2).png";
 
@@ -863,10 +862,13 @@ export default function LoginPage(): React.JSX.Element {
 
       {/* Полноэкранный премиум лоадер */}
       {showFullScreenLoader && (
-        <FullScreenPremiumLoader 
-          message={loaderMessage} 
-          size={200}
-        />
+        <div className="fixed inset-0 flex items-center justify-center">
+          <div className="bg-black bg-opacity-50 flex items-center justify-center">
+            <div className="text-white text-center">
+              <p>{loaderMessage}</p>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

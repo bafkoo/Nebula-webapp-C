@@ -4,15 +4,12 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import resetPasswordBackground from '../../assets/auth/resetPassword/backgrounds/resetPasswordBackground.png';
 import logoImage from '../../assets/auth/login/logos/logo (2).png';
-import FullScreenPremiumLoader from '../../components/ui/FullScreenPremiumLoader';
 
 export default function ResetPasswordPage(): React.JSX.Element {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
-  const [showFullScreenLoader, setShowFullScreenLoader] = useState(false);
-  const [loaderMessage, setLoaderMessage] = useState('');
   
   // Состояние для анимации появления
   const [isVisible, setIsVisible] = useState(false);
@@ -33,25 +30,13 @@ export default function ResetPasswordPage(): React.JSX.Element {
     e.preventDefault();
     if (!email.trim()) return;
 
-    setShowFullScreenLoader(true);
-    setLoaderMessage(t('auth.resetPassword.sending'));
-    
     try {
       await resetPassword(email);
-      
-      setLoaderMessage(t('auth.resetPassword.emailSent'));
-      setTimeout(() => {
-        setIsSuccess(true);
-        setShowFullScreenLoader(false);
-      }, 1000);
+      setIsSuccess(true);
     } catch (error) {
       console.error('Reset password error:', error);
       // В случае ошибки все равно показываем success для безопасности
-      setLoaderMessage(t('auth.resetPassword.emailSent'));
-      setTimeout(() => {
-        setIsSuccess(true);
-        setShowFullScreenLoader(false);
-      }, 1000);
+      setIsSuccess(true);
     }
   };
 
@@ -541,14 +526,6 @@ export default function ResetPasswordPage(): React.JSX.Element {
           filter: 'blur(40px)'
         }}
       />
-
-      {/* Полноэкранный премиум лоадер */}
-      {showFullScreenLoader && (
-        <FullScreenPremiumLoader 
-          message={loaderMessage} 
-          size={200}
-        />
-      )}
     </div>
   );
 } 

@@ -1,48 +1,48 @@
-import * as React from "react"
-import * as AvatarPrimitive from "@radix-ui/react-avatar"
+import React from 'react';
+import { cn } from '../../lib/utils';
+import { AnonymousIcon } from '../icons/Icons';
 
-import { cn } from "@/lib/utils"
+interface AvatarProps {
+  src?: string;
+  alt?: string;
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
 
-const Avatar = React.forwardRef<
-  React.ElementRef<typeof AvatarPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root>
->(({ className, ...props }, ref) => (
-  <AvatarPrimitive.Root
-    ref={ref}
-    className={cn(
-      "relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full",
-      className
-    )}
-    {...props}
-  />
-))
-Avatar.displayName = AvatarPrimitive.Root.displayName
+export const Avatar: React.FC<AvatarProps> = ({ 
+  src, 
+  alt = 'Avatar', 
+  size = 'md',
+  className 
+}) => {
+  const sizeClasses = {
+    sm: 'w-8 h-8',
+    md: 'w-10 h-10',
+    lg: 'w-12 h-12'
+  };
 
-const AvatarImage = React.forwardRef<
-  React.ElementRef<typeof AvatarPrimitive.Image>,
-  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>
->(({ className, ...props }, ref) => (
-  <AvatarPrimitive.Image
-    ref={ref}
-    className={cn("aspect-square h-full w-full", className)}
-    {...props}
-  />
-))
-AvatarImage.displayName = AvatarPrimitive.Image.displayName
-
-const AvatarFallback = React.forwardRef<
-  React.ElementRef<typeof AvatarPrimitive.Fallback>,
-  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Fallback>
->(({ className, ...props }, ref) => (
-  <AvatarPrimitive.Fallback
-    ref={ref}
-    className={cn(
-      "flex h-full w-full items-center justify-center rounded-full bg-muted",
-      className
-    )}
-    {...props}
-  />
-))
-AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName
-
-export { Avatar, AvatarImage, AvatarFallback } 
+  return (
+    <div
+      className={cn(
+        'relative inline-flex shrink-0 overflow-hidden rounded-full bg-muted',
+        sizeClasses[size],
+        className
+      )}
+    >
+      {src ? (
+        <img
+          src={src}
+          alt={alt}
+          className="aspect-square h-full w-full object-cover"
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center bg-secondary">
+          <AnonymousIcon 
+            size={size === 'sm' ? 16 : size === 'md' ? 20 : 24} 
+            className="text-muted-foreground" 
+          />
+        </div>
+      )}
+    </div>
+  );
+}; 
