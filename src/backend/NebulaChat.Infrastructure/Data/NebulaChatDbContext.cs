@@ -15,6 +15,8 @@ public class NebulaChatDbContext : DbContext
     public DbSet<Message> Messages { get; set; }
     public DbSet<ChatParticipant> ChatParticipants { get; set; }
     public DbSet<BannedUser> BannedUsers { get; set; }
+    public DbSet<ChatInvite> ChatInvites { get; set; }
+    public DbSet<AdminActionLog> AdminActionLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -122,4 +122,21 @@ public interface IChatService
     /// <param name="userIdToUnban">ID разбаненного пользователя</param>
     /// <param name="currentUserId">ID текущего пользователя</param>
     Task UnbanUserAsync(Guid chatId, Guid userIdToUnban, Guid currentUserId);
+
+    /// <summary>
+    /// Обновление настроек группового чата (только для админов/владельцев)
+    /// </summary>
+    Task<ChatDto> UpdateGroupSettingsAsync(Guid chatId, UpdateGroupSettingsRequest request, Guid currentUserId);
+
+    /// <summary>
+    /// Модерация сообщения в групповом чате
+    /// </summary>
+    Task ModerateMessageAsync(Guid chatId, ModerateMessageRequest request, Guid currentUserId);
+
+    /// <summary>
+    /// Получить участников чата
+    /// </summary>
+    /// <param name="chatId">ID чата</param>
+    /// <returns>Список участников</returns>
+    Task<List<ParticipantDto>> GetParticipantsAsync(Guid chatId);
 } 

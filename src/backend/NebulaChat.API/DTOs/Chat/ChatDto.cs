@@ -33,6 +33,11 @@ public class ChatDto
     public string? AvatarUrl { get; set; }
     
     /// <summary>
+    /// Максимальное количество участников для групповых чатов
+    /// </summary>
+    public int? MaxParticipants { get; set; }
+    
+    /// <summary>
     /// ID создателя чата
     /// </summary>
     public Guid CreatedBy { get; set; }

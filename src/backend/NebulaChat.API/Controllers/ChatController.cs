@@ -6,6 +6,9 @@ using NebulaChat.API.Hubs;
 using NebulaChat.Domain.Entities.Enums;
 using System.Security.Claims;
 using NebulaChat.API.Services.Interfaces;
+using AutoMapper;
+using NebulaChat.Domain.Interfaces;
+using System.Linq;
 
 namespace NebulaChat.API.Controllers;
 
@@ -20,15 +23,21 @@ public class ChatController : ControllerBase
     private readonly ILogger<ChatController> _logger;
     private readonly IHubContext<ChatHub> _hubContext;
     private readonly IChatService _chatService;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IMapper _mapper;
 
     public ChatController(
         ILogger<ChatController> logger, 
         IHubContext<ChatHub> hubContext,
-        IChatService chatService)
+        IChatService chatService,
+        IUnitOfWork unitOfWork,
+        IMapper mapper)
     {
         _logger = logger;
         _hubContext = hubContext;
         _chatService = chatService;
+        _unitOfWork = unitOfWork;
+        _mapper = mapper;
     }
 
     /// <summary>
@@ -120,7 +129,7 @@ public class ChatController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating chat");
-            return StatusCode(500, "Internal server error");
+            return StatusCode(500, ex.ToString());
         }
     }
 
@@ -287,7 +296,7 @@ public class ChatController : ControllerBase
     public async Task<IActionResult> UpdateParticipantRole(Guid chatId, Guid userId, [FromBody] UpdateParticipantRoleRequest request)
     {
         var currentUserId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        await _chatService.UpdateParticipantRoleAsync(chatId, userId, request.NewRole, currentUserId);
+        await _chatService.UpdateParticipantRoleAsync(chatId, userId, request.Role, currentUserId);
         return NoContent();
     }
 
@@ -304,6 +313,136 @@ public class ChatController : ControllerBase
     {
         var currentUserId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         await _chatService.UnbanUserAsync(chatId, userId, currentUserId);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Обновить настройки группового чата (только для админов/владельцев)
+    /// </summary>
+    [HttpPut("{chatId:guid}/settings")]
+    public async Task<ActionResult<ChatDto>> UpdateGroupSettings(Guid chatId, [FromBody] UpdateGroupSettingsRequest request)
+    {
+        var currentUserId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var updated = await _chatService.UpdateGroupSettingsAsync(chatId, request, currentUserId);
+        return Ok(updated);
+    }
+
+    /// <summary>
+    /// Модерация сообщения в групповом чате
+    /// </summary>
+    [HttpPost("{chatId:guid}/moderate")]
+    public async Task<IActionResult> ModerateMessage(Guid chatId, [FromBody] ModerateMessageRequest request)
+    {
+        var currentUserId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        await _chatService.ModerateMessageAsync(chatId, request, currentUserId);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Получить участников чата
+    /// </summary>
+    [HttpGet("{chatId}/participants")]
+    public async Task<ActionResult<IEnumerable<ParticipantDto>>> GetParticipants(Guid chatId)
+    {
+        try
+        {
+            _logger.LogInformation("Getting participants for chat {ChatId}", chatId);
+            var participants = await _chatService.GetParticipantsAsync(chatId);
+            return Ok(participants);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting participants for chat {ChatId}", chatId);
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    /// <summary>
+    /// Получить историю административных действий в чате
+    /// </summary>
+    [HttpGet("{chatId}/admin-actions")]
+    public async Task<ActionResult<IEnumerable<AdminActionLogDto>>> GetAdminActionLogs(Guid chatId)
+    {
+        try
+        {
+            _logger.LogInformation("Getting admin action logs for chat {ChatId}", chatId);
+            var logs = await _unitOfWork.AdminActionLogRepository.GetLogsByChatAsync(chatId);
+            var dtos = logs.Select(l => new AdminActionLogDto
+            {
+                Id = l.Id,
+                AdminId = l.AdminId,
+                AdminUsername = l.Admin.Username,
+                ActionType = l.ActionType,
+                TargetType = l.TargetType,
+                TargetId = l.TargetId,
+                Reason = l.Reason,
+                Timestamp = l.Timestamp
+            });
+            return Ok(dtos);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting admin action logs for chat {ChatId}", chatId);
+            // Возвращаем стек-трейс для отладки
+            return StatusCode(500, ex.ToString());
+        }
+    }
+
+    // --- Приглашения в групповой чат ---
+
+    /// <summary>
+    /// Создать приглашение в чат
+    /// </summary>
+    [HttpPost("{chatId:guid}/invites")]
+    public async Task<ActionResult<ChatInviteDto>> CreateInvite(Guid chatId, [FromBody] CreateChatInviteRequest request)
+    {
+        var inviterId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var invite = new Domain.Entities.ChatInvite
+        {
+            ChatId = chatId,
+            InviterId = inviterId,
+            InviteeId = request.InviteeId,
+            ExpiresAt = request.ExpiresAt
+        };
+        await _unitOfWork.ChatInviteRepository.AddAsync(invite);
+        await _unitOfWork.SaveChangesAsync();
+        var dto = _mapper.Map<ChatInviteDto>(invite);
+        return CreatedAtAction(nameof(GetInvite), new { inviteId = invite.Id }, dto);
+    }
+
+    /// <summary>
+    /// Получить приглашения для текущего пользователя
+    /// </summary>
+    [HttpGet("invites")]
+    public async Task<ActionResult<IEnumerable<ChatInviteDto>>> GetUserInvites()
+    {
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var invites = await _unitOfWork.ChatInviteRepository.GetInvitesForUserAsync(userId);
+        var dtos = invites.Select(i => _mapper.Map<ChatInviteDto>(i));
+        return Ok(dtos);
+    }
+
+    /// <summary>
+    /// Получить конкретное приглашение
+    /// </summary>
+    [HttpGet("invites/{inviteId:guid}")]
+    public async Task<ActionResult<ChatInviteDto>> GetInvite(Guid inviteId)
+    {
+        var invite = await _unitOfWork.ChatInviteRepository.GetByIdAsync(inviteId);
+        if (invite == null) return NotFound();
+        return Ok(_mapper.Map<ChatInviteDto>(invite));
+    }
+
+    /// <summary>
+    /// Удалить приглашение
+    /// </summary>
+    [HttpDelete("invites/{inviteId:guid}")]
+    public async Task<IActionResult> RemoveInvite(Guid inviteId)
+    {
+        var invite = await _unitOfWork.ChatInviteRepository.GetByIdAsync(inviteId);
+        if (invite == null) return NotFound();
+        _unitOfWork.ChatInviteRepository.Remove(invite);
+        await _unitOfWork.SaveChangesAsync();
         return NoContent();
     }
 } 

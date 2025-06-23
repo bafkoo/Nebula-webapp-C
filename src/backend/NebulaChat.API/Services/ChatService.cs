@@ -5,6 +5,8 @@ using NebulaChat.API.Services.Interfaces;
 using NebulaChat.Domain.Entities;
 using NebulaChat.Domain.Entities.Enums;
 using NebulaChat.Infrastructure.Data;
+using System;
+using NebulaChat.Domain.Interfaces;
 
 namespace NebulaChat.API.Services
 {
@@ -12,11 +14,13 @@ namespace NebulaChat.API.Services
     {
         private readonly NebulaChatDbContext _context;
         private readonly IMapper _mapper;
+        private readonly IAdminActionLogRepository _adminActionLogRepository;
 
-        public ChatService(NebulaChatDbContext context, IMapper mapper)
+        public ChatService(NebulaChatDbContext context, IMapper mapper, IAdminActionLogRepository adminActionLogRepository)
         {
             _context = context;
             _mapper = mapper;
+            _adminActionLogRepository = adminActionLogRepository;
         }
 
         public async Task AddParticipantAsync(Guid chatId, Guid userIdToAdd, Guid currentUserId)
@@ -72,10 +76,43 @@ namespace NebulaChat.API.Services
             return Task.FromResult(true);
         }
 
-        public Task<ChatDto> CreateChatAsync(CreateChatRequest request, Guid currentUserId)
+        public async Task<ChatDto> CreateChatAsync(CreateChatRequest request, Guid currentUserId)
         {
-            // TODO: Implement logic
-            throw new NotImplementedException();
+            // Создание нового чата
+            var chat = new Chat
+            {
+                Name = request.Name,
+                Description = request.Description,
+                Type = request.Type,
+                CreatedBy = currentUserId,
+                IsPrivate = request.IsPrivate,
+                MaxParticipants = request.MaxParticipants ?? 100
+            };
+            _context.Chats.Add(chat);
+            await _context.SaveChangesAsync();
+
+            // Добавление участников
+            foreach (var participantId in request.ParticipantIds)
+            {
+                var participant = new ChatParticipant
+                {
+                    ChatId = chat.Id,
+                    UserId = participantId,
+                    Role = participantId == currentUserId ? ParticipantRole.Owner : ParticipantRole.Member,
+                    JoinedAt = DateTime.UtcNow
+                };
+                _context.ChatParticipants.Add(participant);
+            }
+            await _context.SaveChangesAsync();
+
+            // Загрузка с навигационными свойствами для маппинга
+            var createdChat = await _context.Chats
+                .Include(c => c.Participants)
+                .Include(c => c.Creator)
+                .FirstOrDefaultAsync(c => c.Id == chat.Id);
+
+            var dto = _mapper.Map<ChatDto>(createdChat!);
+            return dto;
         }
 
         public Task<bool> DeleteChatAsync(Guid chatId, Guid currentUserId)
@@ -136,6 +173,13 @@ namespace NebulaChat.API.Services
 
             _context.ChatParticipants.Remove(participantToRemove);
             await _context.SaveChangesAsync();
+
+            if (currentUserId != userIdToRemove)
+            {
+                var log = new AdminActionLog { ChatId = chatId, AdminId = currentUserId, ActionType = "Kick", TargetType = "User", TargetId = userIdToRemove, Timestamp = DateTime.UtcNow };
+                await _adminActionLogRepository.AddAsync(log);
+                await _context.SaveChangesAsync();
+            }
         }
 
         public Task<List<ChatDto>> SearchChatsAsync(string query, Guid userId, ChatType? chatType = null)
@@ -199,6 +243,10 @@ namespace NebulaChat.API.Services
             participantToUpdate.Role = newRole;
             _context.ChatParticipants.Update(participantToUpdate);
             await _context.SaveChangesAsync();
+
+            var logRole = new AdminActionLog { ChatId = chatId, AdminId = currentUserId, ActionType = "RoleUpdate", TargetType = "User", TargetId = userIdToUpdate, Reason = newRole.ToString(), Timestamp = DateTime.UtcNow };
+            await _adminActionLogRepository.AddAsync(logRole);
+            await _context.SaveChangesAsync();
         }
 
         public async Task BanUserAsync(Guid chatId, Guid userIdToBan, string? reason, Guid currentUserId)
@@ -244,6 +292,10 @@ namespace NebulaChat.API.Services
 
             await _context.BannedUsers.AddAsync(ban);
             await _context.SaveChangesAsync();
+
+            var logBan = new AdminActionLog { ChatId = chatId, AdminId = currentUserId, ActionType = "Ban", TargetType = "User", TargetId = userIdToBan, Reason = reason, Timestamp = DateTime.UtcNow };
+            await _adminActionLogRepository.AddAsync(logBan);
+            await _context.SaveChangesAsync();
         }
 
         public async Task UnbanUserAsync(Guid chatId, Guid userIdToUnban, Guid currentUserId)
@@ -267,6 +319,89 @@ namespace NebulaChat.API.Services
             }
             
             // If the record doesn't exist, we consider the operation successful (idempotency).
+        }
+
+        /// <summary>
+        /// Модерация сообщения в групповом чате
+        /// </summary>
+        public async Task ModerateMessageAsync(Guid chatId, ModerateMessageRequest request, Guid currentUserId)
+        {
+            var chat = await _context.Chats
+                .Include(c => c.Participants)
+                .FirstOrDefaultAsync(c => c.Id == chatId);
+
+            if (chat == null) throw new KeyNotFoundException("Chat not found.");
+
+            var currentUserParticipant = chat.Participants.FirstOrDefault(p => p.UserId == currentUserId);
+            if (currentUserParticipant == null || currentUserParticipant.Role < ParticipantRole.Admin)
+                throw new UnauthorizedAccessException("You do not have permission to moderate messages.");
+
+            var message = await _context.Messages.FirstOrDefaultAsync(m => m.Id == request.MessageId && m.ChatId == chatId);
+            if (message == null) throw new KeyNotFoundException("Message not found.");
+
+            if (request.Action.Equals("delete", StringComparison.OrdinalIgnoreCase))
+            {
+                _context.Messages.Remove(message);
+            }
+            else if (request.Action.Equals("edit", StringComparison.OrdinalIgnoreCase))
+            {
+                message.Content = request.Reason ?? "[Message moderated by admin]";
+                _context.Messages.Update(message);
+            }
+            else
+            {
+                throw new InvalidOperationException("Invalid moderation action.");
+            }
+
+            await _context.SaveChangesAsync();
+
+            var logModerate = new AdminActionLog { ChatId = chatId, AdminId = currentUserId, ActionType = "Moderate", TargetType = "Message", TargetId = request.MessageId, Reason = request.Action, Timestamp = DateTime.UtcNow };
+            await _adminActionLogRepository.AddAsync(logModerate);
+            await _context.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Получить участников чата
+        /// </summary>
+        public async Task<List<ParticipantDto>> GetParticipantsAsync(Guid chatId)
+        {
+            var participants = await _context.ChatParticipants
+                .Include(p => p.User)
+                .Where(p => p.ChatId == chatId && !p.HasLeft)
+                .ToListAsync();
+            return _mapper.Map<List<ParticipantDto>>(participants);
+        }
+
+        public async Task<ChatDto> UpdateGroupSettingsAsync(Guid chatId, UpdateGroupSettingsRequest request, Guid currentUserId)
+        {
+            var chat = await _context.Chats
+                .Include(c => c.Participants)
+                .FirstOrDefaultAsync(c => c.Id == chatId);
+
+            if (chat == null) throw new KeyNotFoundException("Chat not found.");
+
+            var currentUserParticipant = chat.Participants.FirstOrDefault(p => p.UserId == currentUserId);
+            if (currentUserParticipant == null || currentUserParticipant.Role < ParticipantRole.Admin)
+                throw new UnauthorizedAccessException("You do not have permission to update group settings.");
+
+            if (chat.Type != ChatType.Group)
+                throw new InvalidOperationException("Settings can only be updated for group chats.");
+
+            if (request.Name is not null) chat.Name = request.Name;
+            if (request.Description is not null) chat.Description = request.Description;
+            if (request.AvatarUrl is not null) chat.AvatarUrl = request.AvatarUrl;
+            if (request.IsPrivate.HasValue) chat.IsPrivate = request.IsPrivate.Value;
+            if (request.MaxParticipants.HasValue) chat.MaxParticipants = request.MaxParticipants.Value;
+
+            _context.Chats.Update(chat);
+            await _context.SaveChangesAsync();
+
+            var logSettings = new AdminActionLog { ChatId = chatId, AdminId = currentUserId, ActionType = "SettingsUpdate", TargetType = "Chat", TargetId = chatId, Timestamp = DateTime.UtcNow };
+            await _adminActionLogRepository.AddAsync(logSettings);
+            await _context.SaveChangesAsync();
+
+            var dto = _mapper.Map<ChatDto>(chat);
+            return dto;
         }
     }
 } 
