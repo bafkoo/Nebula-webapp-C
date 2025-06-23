@@ -78,4 +78,31 @@ public interface IChatService
     /// <param name="chatType">Фильтр по типу чата</param>
     /// <returns>Найденные чаты</returns>
     Task<List<ChatDto>> SearchChatsAsync(string query, Guid userId, ChatType? chatType = null);
+    
+    // --- Participant Management ---
+    
+    /// <summary>
+    /// Добавить участника в чат
+    /// </summary>
+    /// <param name="chatId">ID чата</param>
+    /// <param name="userIdToAdd">ID добавляемого пользователя</param>
+    /// <param name="currentUserId">ID пользователя, который выполняет действие</param>
+    Task AddParticipantAsync(Guid chatId, Guid userIdToAdd, Guid currentUserId);
+
+    /// <summary>
+    /// Удалить участника из чата
+    /// </summary>
+    /// <param name="chatId">ID чата</param>
+    /// <param name="userIdToRemove">ID удаляемого пользователя</param>
+    /// <param name="currentUserId">ID пользователя, который выполняет действие</param>
+    Task RemoveParticipantAsync(Guid chatId, Guid userIdToRemove, Guid currentUserId);
+    
+    /// <summary>
+    /// Обновить роль участника
+    /// </summary>
+    /// <param name="chatId">ID чата</param>
+    /// <param name="userIdToUpdate">ID пользователя, чья роль обновляется</param>
+    /// <param name="newRole">Новая роль</param>
+    /// <param name="currentUserId">ID пользователя, который выполняет действие</param>
+    Task UpdateParticipantRoleAsync(Guid chatId, Guid userIdToUpdate, ParticipantRole newRole, Guid currentUserId);
 } 

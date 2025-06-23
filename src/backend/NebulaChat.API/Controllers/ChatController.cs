@@ -5,6 +5,7 @@ using NebulaChat.API.DTOs.Chat;
 using NebulaChat.API.Hubs;
 using NebulaChat.Domain.Entities.Enums;
 using System.Security.Claims;
+using NebulaChat.API.Services.Interfaces;
 
 namespace NebulaChat.API.Controllers;
 
@@ -18,11 +19,16 @@ public class ChatController : ControllerBase
 {
     private readonly ILogger<ChatController> _logger;
     private readonly IHubContext<ChatHub> _hubContext;
+    private readonly IChatService _chatService;
 
-    public ChatController(ILogger<ChatController> logger, IHubContext<ChatHub> hubContext)
+    public ChatController(
+        ILogger<ChatController> logger, 
+        IHubContext<ChatHub> hubContext,
+        IChatService chatService)
     {
         _logger = logger;
         _hubContext = hubContext;
+        _chatService = chatService;
     }
 
     /// <summary>
@@ -47,24 +53,7 @@ public class ChatController : ControllerBase
             _logger.LogInformation("Getting chats for user {UserId}, page {Page}, pageSize {PageSize}", 
                 userId, page, pageSize);
             
-            // TODO: Реализовать через IChatService
-            // var chats = await _chatService.GetUserChatsAsync(userId, page, pageSize);
-            
-            // Временная заглушка
-            var chats = new List<ChatDto>
-            {
-                new ChatDto
-                {
-                    Id = Guid.NewGuid(),
-                    Name = "Общий чат",
-                    Type = ChatType.Group,
-                    Description = "Основной чат для всех участников",
-                    ParticipantCount = 15,
-                    UnreadCount = 3,
-                    LastMessageAt = DateTime.UtcNow.AddMinutes(-5),
-                    CreatedAt = DateTime.UtcNow.AddDays(-7)
-                }
-            };
+            var chats = await _chatService.GetUserChatsAsync(Guid.Parse(userId), null, page, pageSize);
             
             return Ok(chats);
         }
@@ -88,22 +77,13 @@ public class ChatController : ControllerBase
             var userId = GetUserId();
             
             _logger.LogInformation("Getting chat {ChatId} for user {UserId}", id, userId);
-            
-            // TODO: Реализовать через IChatService
-            // var chat = await _chatService.GetChatAsync(id, userId);
-            
-            // Временная заглушка
-            var chat = new ChatDto
+
+            var chat = await _chatService.GetChatAsync(id, Guid.Parse(userId));
+
+            if (chat == null)
             {
-                Id = id,
-                Name = "Игровой чат",
-                Type = ChatType.Group,
-                Description = "Чат для обсуждения игр",
-                ParticipantCount = 8,
-                UnreadCount = 0,
-                LastMessageAt = DateTime.UtcNow.AddMinutes(-10),
-                CreatedAt = DateTime.UtcNow.AddDays(-3)
-            };
+                return NotFound("Chat not found or you don't have access.");
+            }
             
             return Ok(chat);
         }
@@ -128,21 +108,7 @@ public class ChatController : ControllerBase
             
             _logger.LogInformation("Creating chat {ChatName} by user {UserId}", request.Name, userId);
             
-            // TODO: Реализовать через IChatService
-            // var chat = await _chatService.CreateChatAsync(request, userId);
-            
-            // Временная заглушка
-            var chat = new ChatDto
-            {
-                Id = Guid.NewGuid(),
-                Name = request.Name,
-                Type = request.Type,
-                Description = request.Description,
-                ParticipantCount = 1, // Создатель
-                UnreadCount = 0,
-                LastMessageAt = null,
-                CreatedAt = DateTime.UtcNow
-            };
+            var chat = await _chatService.CreateChatAsync(request, Guid.Parse(userId));
             
             return CreatedAtAction(nameof(GetChat), new { id = chat.Id }, chat);
         }
@@ -172,22 +138,13 @@ public class ChatController : ControllerBase
             var userId = GetUserId();
             
             _logger.LogInformation("Updating chat {ChatId} by user {UserId}", id, userId);
-            
-            // TODO: Реализовать через IChatService
-            // var chat = await _chatService.UpdateChatAsync(id, request, userId);
-            
-            // Временная заглушка
-            var chat = new ChatDto
+
+            var chat = await _chatService.UpdateChatAsync(id, request.Name, request.Description, null, Guid.Parse(userId));
+
+            if (chat == null)
             {
-                Id = id,
-                Name = request.Name,
-                Type = request.Type,
-                Description = request.Description,
-                ParticipantCount = 5,
-                UnreadCount = 0,
-                LastMessageAt = DateTime.UtcNow.AddMinutes(-2),
-                CreatedAt = DateTime.UtcNow.AddDays(-1)
-            };
+                return NotFound("Chat not found.");
+            }
             
             return Ok(chat);
         }
@@ -222,8 +179,7 @@ public class ChatController : ControllerBase
             
             _logger.LogInformation("Deleting chat {ChatId} by user {UserId}", id, userId);
             
-            // TODO: Реализовать через IChatService
-            // await _chatService.DeleteChatAsync(id, userId);
+            await _chatService.DeleteChatAsync(id, Guid.Parse(userId));
             
             return NoContent();
         }
@@ -298,24 +254,48 @@ public class ChatController : ControllerBase
     [HttpPost("{chatId}/participants")]
     public async Task<IActionResult> AddParticipant(Guid chatId, [FromBody] AddParticipantRequest request)
     {
-        // TODO: Проверить права (админ/модератор чата)
-        // TODO: Проверить, не состоит ли пользователь уже в чате
-        // TODO: Проверить, не превышен ли лимит участников
-        return await Task.FromResult(Ok());
+        try
+        {
+            var currentUserId = Guid.Parse(GetUserId());
+            await _chatService.AddParticipantAsync(chatId, request.UserId, currentUserId);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            // TODO: Add specific exceptions
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpDelete("{chatId}/participants/{userId}")]
     public async Task<IActionResult> RemoveParticipant(Guid chatId, Guid userId)
     {
-        // TODO: Проверить права (админ/модератор или сам пользователь)
-        return await Task.FromResult(NoContent());
+        try
+        {
+            var currentUserId = Guid.Parse(GetUserId());
+            await _chatService.RemoveParticipantAsync(chatId, userId, currentUserId);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            // TODO: Add specific exceptions
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPut("{chatId}/participants/{userId}/role")]
     public async Task<IActionResult> UpdateParticipantRole(Guid chatId, Guid userId, [FromBody] UpdateParticipantRoleRequest request)
     {
-        // TODO: Проверить права (админ/модератор)
-        // TODO: Проверить, что роль не Owner
-        return await Task.FromResult(Ok());
+        try
+        {
+            var currentUserId = Guid.Parse(GetUserId());
+            await _chatService.UpdateParticipantRoleAsync(chatId, userId, request.Role, currentUserId);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            // TODO: Add specific exceptions
+            return BadRequest(ex.Message);
+        }
     }
 } 

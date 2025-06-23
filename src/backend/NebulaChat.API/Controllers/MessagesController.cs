@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.SignalR;
 using NebulaChat.API.DTOs.Chat;
 using NebulaChat.API.Hubs;
 using System.Security.Claims;
+using NebulaChat.API.Services.Interfaces;
 
 namespace NebulaChat.API.Controllers;
 
@@ -11,18 +12,19 @@ namespace NebulaChat.API.Controllers;
 /// Контроллер для управления сообщениями в чатах
 /// </summary>
 [ApiController]
-[Route("api/")]
+[Route("api/messages")]
 [Authorize]
 public class MessagesController : ControllerBase
 {
     private readonly ILogger<MessagesController> _logger;
     private readonly IHubContext<ChatHub> _hubContext;
-    // TODO: Добавить IMessageService и IChatService
+    private readonly IMessageService _messageService;
 
-    public MessagesController(ILogger<MessagesController> logger, IHubContext<ChatHub> hubContext)
+    public MessagesController(ILogger<MessagesController> logger, IHubContext<ChatHub> hubContext, IMessageService messageService)
     {
         _logger = logger;
         _hubContext = hubContext;
+        _messageService = messageService;
     }
 
     /// <summary>
@@ -31,23 +33,17 @@ public class MessagesController : ControllerBase
     /// <param name="chatId">ID чата</param>
     /// <param name="page">Номер страницы (начиная с 1)</param>
     /// <param name="pageSize">Размер страницы (максимум 100)</param>
-    [HttpGet("chats/{chatId}/messages")]
-    public async Task<IActionResult> GetChatMessages(Guid chatId, [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
+    [HttpGet("~/api/chats/{chatId}/messages")]
+    public async Task<IActionResult> GetMessages(Guid chatId, [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         _logger.LogInformation("Пользователь {UserId} запрашивает сообщения для чата {ChatId}", userId, chatId);
 
         // TODO: Проверить права пользователя на чат
 
         if (pageSize > 100) pageSize = 100;
 
-        // Временная заглушка
-        var messages = new List<MessageDto>
-        {
-            new MessageDto { Id = Guid.NewGuid(), ChatId = chatId, Content = "Всем привет! 👋", CreatedAt = DateTime.UtcNow.AddMinutes(-2), AuthorUsername = "Admin" },
-            new MessageDto { Id = Guid.NewGuid(), ChatId = chatId, Content = "Добро пожаловать в Nebula Chat!", CreatedAt = DateTime.UtcNow.AddMinutes(-1), AuthorUsername = "System" }
-        };
-
+        var messages = await _messageService.GetMessagesAsync(chatId, userId, page, pageSize);
         return Ok(messages);
     }
 
@@ -56,28 +52,20 @@ public class MessagesController : ControllerBase
     /// </summary>
     /// <param name="chatId">ID чата</param>
     /// <param name="request">Данные сообщения</param>
-    [HttpPost("chats/{chatId}/messages")]
+    [HttpPost("~/api/chats/{chatId}/messages")]
     public async Task<IActionResult> SendMessage(Guid chatId, [FromBody] SendMessageRequest request)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         _logger.LogInformation("Пользователь {UserId} отправляет сообщение в чат {ChatId}", userId, chatId);
 
         // TODO: Проверить права, создать сообщение, сохранить в БД
 
-        var message = new MessageDto
-        {
-            Id = Guid.NewGuid(),
-            ChatId = chatId,
-            Content = request.Content,
-            AuthorId = Guid.Parse(userId!),
-            AuthorUsername = User.Identity?.Name,
-            CreatedAt = DateTime.UtcNow
-        };
+        var message = await _messageService.SendMessageAsync(chatId, request, userId);
         
         // Отправляем сообщение всем участникам чата через SignalR
         await _hubContext.Clients.Group(chatId.ToString()).SendAsync("ReceiveMessage", message);
 
-        return CreatedAtAction(nameof(GetChatMessages), new { chatId = chatId }, message);
+        return Ok(message);
     }
     
     /// <summary>
@@ -85,67 +73,52 @@ public class MessagesController : ControllerBase
     /// </summary>
     /// <param name="messageId">ID сообщения</param>
     /// <param name="request">Новое содержимое</param>
-    [HttpPut("messages/{messageId}")]
-    public async Task<IActionResult> EditMessage(Guid messageId, [FromBody] EditMessageRequest request)
+    [HttpPut("{id}")]
+    public async Task<IActionResult> EditMessage(Guid id, [FromBody] string newContent)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        _logger.LogInformation("Пользователь {UserId} редактирует сообщение {MessageId}", userId, messageId);
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        _logger.LogInformation("Пользователь {UserId} редактирует сообщение {MessageId}", userId, id);
 
         // TODO: 1. Найти сообщение по messageId, чтобы получить chatId
         // TODO: 2. Проверить права на редактирование
         // TODO: 3. Обновить сообщение в БД
 
-        // Временная заглушка для демонстрации
-        var placeholderChatId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+        var editedMessage = await _messageService.EditMessageAsync(id, newContent, userId);
         
-        var editedMessage = new MessageDto
-        {
-            Id = messageId,
-            ChatId = placeholderChatId,
-            Content = request.Content,
-            IsEdited = true,
-            EditedAt = DateTime.UtcNow,
-            AuthorId = Guid.Parse(userId!),
-            AuthorUsername = User.Identity?.Name,
-            CreatedAt = DateTime.UtcNow.AddMinutes(-10) // Placeholder
-        };
-
         // 4. Отправить broadcast "MessageEdited" в группу чата
-        await _hubContext.Clients.Group(placeholderChatId.ToString()).SendAsync("MessageEdited", editedMessage);
-
-        return NoContent();
+        // await _hubContext.Clients.Group(chatId.ToString()).SendAsync("MessageEdited", editedMessage);
+        return Ok(editedMessage);
     }
 
     /// <summary>
     /// Удалить сообщение
     /// </summary>
     /// <param name="messageId">ID сообщения</param>
-    [HttpDelete("messages/{messageId}")]
-    public async Task<IActionResult> DeleteMessage(Guid messageId)
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteMessage(Guid id)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-         _logger.LogInformation("Пользователь {UserId} удаляет сообщение {MessageId}", userId, messageId);
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+         _logger.LogInformation("Пользователь {UserId} удаляет сообщение {MessageId}", userId, id);
 
         // TODO: 1. Найти сообщение по messageId, чтобы получить chatId
         // TODO: 2. Проверить права на удаление
         // TODO: 3. Пометить сообщение как удаленное в БД (soft delete)
 
-        // Временная заглушка для демонстрации
-        var placeholderChatId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+        await _messageService.DeleteMessageAsync(id, userId);
 
         // 4. Отправить broadcast "MessageDeleted" в группу чата с ID сообщения
-        await _hubContext.Clients.Group(placeholderChatId.ToString()).SendAsync("MessageDeleted", new { MessageId = messageId, ChatId = placeholderChatId });
-
+        // await _hubContext.Clients.Group(chatId.ToString()).SendAsync("MessageDeleted", id);
         return NoContent();
     }
 
     [HttpPost("{chatId}/messages/{messageId}/pin")]
     public async Task<IActionResult> PinMessage(Guid chatId, Guid messageId)
     {
-        // TODO: Проверить права (админ/модератор)
-        // TODO: Реализовать логику закрепления
-        // TODO: Отправить SignalR уведомление
-        return await Task.FromResult(Ok());
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        await _messageService.PinMessageAsync(chatId, messageId, userId);
+        
+        // TODO: send notification
+        return Ok();
     }
 }
 
