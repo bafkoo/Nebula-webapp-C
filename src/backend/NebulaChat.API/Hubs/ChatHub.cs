@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using NebulaChat.API.Services;
 using System.Security.Claims;
 
 namespace NebulaChat.API.Hubs;
@@ -115,12 +116,14 @@ public class ChatHub : Hub
         try
         {
             var userId = GetUserId();
+            var username = GetUsername();
             
             // Отправить индикатор печати только другим участникам
             await Clients.GroupExcept($"Chat_{chatId}", Context.ConnectionId)
                 .SendAsync("UserTyping", new 
                 { 
-                    UserId = userId, 
+                    UserId = userId,
+                    Username = username,
                     ChatId = chatId, 
                     IsTyping = isTyping,
                     Timestamp = DateTime.UtcNow
@@ -236,5 +239,19 @@ public class ChatHub : Hub
             throw new UnauthorizedAccessException("User ID not found in token");
         }
         return userId;
+    }
+
+    /// <summary>
+    /// Получить Username текущего пользователя из токена
+    /// </summary>
+    private string GetUsername()
+    {
+        var username = Context.User?.Identity?.Name;
+        if (string.IsNullOrEmpty(username))
+        {
+            // В реальном приложении можно возвращать гостя или кидать исключение
+            return "Anonymous";
+        }
+        return username;
     }
 } 
