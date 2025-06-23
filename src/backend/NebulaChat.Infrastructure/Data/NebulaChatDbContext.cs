@@ -14,6 +14,7 @@ public class NebulaChatDbContext : DbContext
     public DbSet<Chat> Chats { get; set; }
     public DbSet<Message> Messages { get; set; }
     public DbSet<ChatParticipant> ChatParticipants { get; set; }
+    public DbSet<BannedUser> BannedUsers { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -239,6 +240,39 @@ public class NebulaChatDbContext : DbContext
                 .HasFilter("\"NotificationsEnabled\" = true");
         });
         
+        // BannedUser entity configuration
+        modelBuilder.Entity<BannedUser>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            
+            entity.Property(e => e.Reason)
+                .HasMaxLength(500);
+            
+            // Связь с чатом
+            entity.HasOne(e => e.Chat)
+                .WithMany(c => c.BannedUsers)
+                .HasForeignKey(e => e.ChatId)
+                .OnDelete(DeleteBehavior.Cascade); // Удалять бан при удалении чата
+
+            // Связь с забаненным пользователем
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade); // Удалять бан при удалении пользователя
+
+            // Связь с администратором, который забанил
+            entity.HasOne(e => e.BannedBy)
+                .WithMany()
+                .HasForeignKey(e => e.BannedById)
+                .OnDelete(DeleteBehavior.Restrict); // Не удалять админа, если он кого-то банил
+
+            // Уникальный индекс, чтобы нельзя было забанить одного и того же пользователя дважды в одном чате
+            entity.HasIndex(e => new { e.ChatId, e.UserId })
+                .IsUnique()
+                .HasDatabaseName("IX_BannedUsers_Unique");
+        });
+
         // Дополнительные ограничения на уровне базы данных
         
         // Ограничение на максимальное количество участников в чате

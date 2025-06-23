@@ -67,4 +67,9 @@ public class Chat : BaseEntity
     /// Сообщения в чате
     /// </summary>
     public ICollection<Message> Messages { get; set; } = new List<Message>();
+
+    /// <summary>
+    /// Забаненные в чате пользователи
+    /// </summary>
+    public ICollection<BannedUser> BannedUsers { get; set; } = new List<BannedUser>();
 } 

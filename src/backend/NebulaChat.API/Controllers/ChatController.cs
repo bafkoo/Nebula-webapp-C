@@ -286,16 +286,24 @@ public class ChatController : ControllerBase
     [HttpPut("{chatId}/participants/{userId}/role")]
     public async Task<IActionResult> UpdateParticipantRole(Guid chatId, Guid userId, [FromBody] UpdateParticipantRoleRequest request)
     {
-        try
-        {
-            var currentUserId = Guid.Parse(GetUserId());
-            await _chatService.UpdateParticipantRoleAsync(chatId, userId, request.Role, currentUserId);
-            return Ok();
-        }
-        catch (Exception ex)
-        {
-            // TODO: Add specific exceptions
-            return BadRequest(ex.Message);
-        }
+        var currentUserId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        await _chatService.UpdateParticipantRoleAsync(chatId, userId, request.NewRole, currentUserId);
+        return NoContent();
+    }
+
+    [HttpPost("{chatId}/participants/{userId}/ban")]
+    public async Task<IActionResult> BanParticipant(Guid chatId, Guid userId, [FromBody] BanUserRequest request)
+    {
+        var currentUserId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        await _chatService.BanUserAsync(chatId, userId, request.Reason, currentUserId);
+        return NoContent();
+    }
+
+    [HttpDelete("{chatId}/participants/{userId}/ban")]
+    public async Task<IActionResult> UnbanParticipant(Guid chatId, Guid userId)
+    {
+        var currentUserId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        await _chatService.UnbanUserAsync(chatId, userId, currentUserId);
+        return NoContent();
     }
 } 

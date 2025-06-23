@@ -32,7 +32,7 @@ builder.Services.AddFluentValidationClientsideAdapters();
 builder.Services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
 // Add AutoMapper
-builder.Services.AddAutoMapper(Assembly.GetExecutingAssembly());
+builder.Services.AddAutoMapper(typeof(Program).Assembly);
 
 // Add Infrastructure services (DbContext, etc.)
 builder.Services.AddInfrastructure(builder.Configuration);

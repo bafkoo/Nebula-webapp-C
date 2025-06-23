@@ -105,4 +105,21 @@ public interface IChatService
     /// <param name="newRole">Новая роль</param>
     /// <param name="currentUserId">ID пользователя, который выполняет действие</param>
     Task UpdateParticipantRoleAsync(Guid chatId, Guid userIdToUpdate, ParticipantRole newRole, Guid currentUserId);
+
+    /// <summary>
+    /// Забанить пользователя в чате
+    /// </summary>
+    /// <param name="chatId">ID чата</param>
+    /// <param name="userIdToBan">ID забаненного пользователя</param>
+    /// <param name="reason">Причина бана</param>
+    /// <param name="currentUserId">ID текущего пользователя</param>
+    Task BanUserAsync(Guid chatId, Guid userIdToBan, string? reason, Guid currentUserId);
+
+    /// <summary>
+    /// Разбанить пользователя в чате
+    /// </summary>
+    /// <param name="chatId">ID чата</param>
+    /// <param name="userIdToUnban">ID разбаненного пользователя</param>
+    /// <param name="currentUserId">ID текущего пользователя</param>
+    Task UnbanUserAsync(Guid chatId, Guid userIdToUnban, Guid currentUserId);
 } 
