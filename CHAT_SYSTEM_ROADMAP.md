@@ -514,7 +514,7 @@ npm install @tanstack/react-query
 | 2.4 DTOs и Validation | ✅ | 1/1 | 100% |
 | 3.1 Group Chat Features | ✅ | 5/5 | 100% |
 | 3.2 Admin Features | ✅ | 5/5 | 100% |
-| 3.3 Group Management UI Logic | ⏳ | 3/5 | 60% |
+| 3.3 Group Management UI Logic | ⏳ | 4/5 | 80% |
 | 4.1 Chat Components Architecture | ⏳ | 0/1 | 0% |
 | 4.2 SignalR Client Integration | ⏳ | 0/1 | 0% |
 | 4.3 Chat State Management | ⏳ | 0/1 | 0% |

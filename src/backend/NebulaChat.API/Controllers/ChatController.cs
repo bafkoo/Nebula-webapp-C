@@ -9,6 +9,7 @@ using NebulaChat.API.Services.Interfaces;
 using AutoMapper;
 using NebulaChat.Domain.Interfaces;
 using System.Linq;
+using System.Text;
 
 namespace NebulaChat.API.Controllers;
 
@@ -355,6 +356,25 @@ public class ChatController : ControllerBase
             _logger.LogError(ex, "Error getting participants for chat {ChatId}", chatId);
             return StatusCode(500, "Internal server error");
         }
+    }
+
+    /// <summary>
+    /// Экспорт участников группы в CSV
+    /// </summary>
+    [HttpGet("{chatId}/participants/export")]
+    public async Task<IActionResult> ExportParticipants(Guid chatId)
+    {
+        var participants = await _chatService.GetParticipantsAsync(chatId);
+        var sb = new StringBuilder();
+        sb.AppendLine("UserId,Username,Role,JoinedAt,IsBanned,BannedUntil,BanReason");
+        foreach (var p in participants)
+        {
+            var bannedUntil = p.BannedUntil.HasValue ? p.BannedUntil.Value.ToString("o") : string.Empty;
+            var banReason = p.BanReason?.Replace(",", " ") ?? string.Empty;
+            sb.AppendLine($"{p.UserId},{p.Username},{p.Role},{p.JoinedAt:o},{p.IsBanned},{bannedUntil},{banReason}");
+        }
+        var bytes = Encoding.UTF8.GetBytes(sb.ToString());
+        return File(bytes, "text/csv", $"participants_{chatId}.csv");
     }
 
     /// <summary>
