@@ -1,20 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../../../ui/Button';
 import { Badge } from '../../../ui/Badge';
 import { 
   TrophyIcon, 
   CalendarIcon, 
-  GroupUsersIcon,
-  GameControllerIcon,
   SparklesIcon
 } from '../../../icons';
 
-// Типы для Events & Tournaments Widget
-interface EventsTournament {
+// Локальные типы для полной независимости виджета
+interface Tournament {
   id: string;
   name: string;
   game: string;
-  status: 'live' | 'upcoming' | 'registration';
+  status: 'live' | 'upcoming' | 'registration' | 'ended';
   participants: number;
   maxParticipants: number;
   prizePool: number;
@@ -26,51 +24,74 @@ interface EventsTournament {
   isRegistered: boolean;
   viewerCount?: number;
   registrationDeadline?: Date;
+  difficulty: 'casual' | 'competitive' | 'pro';
+  isHot?: boolean;
+  liveScore?: string;
 }
 
-interface EventsTournamentsData {
-  liveTournaments: EventsTournament[];
-  upcomingEvents: EventsTournament[];
-  communityEvents: EventsTournament[];
+interface Notification {
+  id: string;
+  message: string;
+  type: 'success' | 'info' | 'warning' | 'live';
+  duration?: number;
 }
 
-// Mockup данные
-const mockEventsTournamentsData: EventsTournamentsData = {
-  liveTournaments: [
+interface CountdownTimer {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+  isNow?: boolean;
+  isEnded?: boolean;
+}
+
+interface EventsTournamentsWidgetProps {
+  animationDelay?: number;
+}
+
+export const EventsTournamentsWidget: React.FC<EventsTournamentsWidgetProps> = ({
+  animationDelay = 0
+}) => {
+  const [activeTab, setActiveTab] = useState<'live' | 'upcoming' | 'my'>('live');
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [tournaments, setTournaments] = useState<Tournament[]>([
     {
       id: "1",
-      name: "CS2 Major Championship",
+      name: "CS2 Major Finals",
       game: "CS2",
       status: "live",
       participants: 16,
       maxParticipants: 16,
       prizePool: 1000000,
-      startTime: new Date(),
-      endTime: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 часа
-      description: "Финал чемпионата мира по CS2",
+      startTime: new Date(Date.now() - 45 * 60 * 1000), // 45 мин назад
+      endTime: new Date(Date.now() + 75 * 60 * 1000), // 75 мин
+      description: "Финал крупнейшего турнира года",
       organizer: "ESL",
-      format: "Single Elimination",
+      format: "BO5",
       isRegistered: false,
-      viewerCount: 125000
+      viewerCount: 125000,
+      difficulty: 'pro',
+      isHot: true,
+      liveScore: "NaVi 2:1 G2"
     },
     {
       id: "2", 
-      name: "Valorant Pro Series",
+      name: "Valorant Night Cup",
       game: "Valorant",
       status: "live",
       participants: 8,
       maxParticipants: 16,
-      prizePool: 250000,
-      startTime: new Date(Date.now() - 30 * 60 * 1000), // 30 мин назад
-      endTime: new Date(Date.now() + 3 * 60 * 60 * 1000), // 3 часа
-      description: "Профессиональная серия турниров",
+      prizePool: 25000,
+      startTime: new Date(Date.now() - 20 * 60 * 1000),
+      endTime: new Date(Date.now() + 100 * 60 * 1000),
+      description: "Вечерний турнир для профи",
       organizer: "Riot Games",
-      format: "Double Elimination",
+      format: "Single Elim",
       isRegistered: false,
-      viewerCount: 45000
-    }
-  ],
-  upcomingEvents: [
+      viewerCount: 15000,
+      difficulty: 'competitive',
+      liveScore: "Team Liquid vs FNC"
+    },
     {
       id: "3",
       name: "Dota 2 International",
@@ -79,106 +100,163 @@ const mockEventsTournamentsData: EventsTournamentsData = {
       participants: 0,
       maxParticipants: 18,
       prizePool: 15000000,
-      startTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 дней
-      endTime: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), // 10 дней
+      startTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+      endTime: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
       description: "Крупнейший турнир по Dota 2",
       organizer: "Valve",
-      format: "Group Stage + Playoffs",
+      format: "Groups + Playoffs",
       isRegistered: false,
-      registrationDeadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+      registrationDeadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+      difficulty: 'pro',
+      isHot: true
     },
     {
       id: "4",
+      name: "Community CS2 5v5",
+      game: "CS2",
+      status: "registration",
+      participants: 12,
+      maxParticipants: 32,
+      prizePool: 5000,
+      startTime: new Date(Date.now() + 2 * 60 * 60 * 1000), // через 2 часа
+      endTime: new Date(Date.now() + 5 * 60 * 60 * 1000),
+      description: "Открытый турнир для всех",
+      organizer: "Nebula Community",
+      format: "Swiss System",
+      isRegistered: true,
+      registrationDeadline: new Date(Date.now() + 90 * 60 * 1000), // 1.5 часа
+      difficulty: 'casual'
+    },
+    {
+      id: "5",
       name: "Apex Legends ALGS",
       game: "Apex Legends",
       status: "upcoming",
-      participants: 12,
-      maxParticipants: 20,
+      participants: 45,
+      maxParticipants: 60,
       prizePool: 500000,
-      startTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 дня
-      endTime: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000), // 4 дня
+      startTime: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
+      endTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
       description: "Apex Legends Global Series",
       organizer: "EA Sports",
       format: "Battle Royale",
-      isRegistered: true,
-      registrationDeadline: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000)
-    }
-  ],
-  communityEvents: [
-    {
-      id: "5",
-      name: "CS2 Community Cup",
-      game: "CS2",
-      status: "upcoming",
-      participants: 24,
-      maxParticipants: 32,
-      prizePool: 5000,
-      startTime: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000), // завтра
-      endTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // послезавтра
-      description: "Любительский турнир сообщества",
-      organizer: "Gaming Community",
-      format: "Swiss System",
       isRegistered: false,
-      registrationDeadline: new Date(Date.now() + 12 * 60 * 60 * 1000)
-    },
-    {
-      id: "6",
-      name: "Valorant Friday Night",
-      game: "Valorant",
-      status: "registration",
-      participants: 8,
-      maxParticipants: 16,
-      prizePool: 1000,
-      startTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // неделя
-      endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000),
-      description: "Еженедельный турнир по пятницам",
-      organizer: "Nebula Community",
-      format: "Single Elimination",
-      isRegistered: true,
-      registrationDeadline: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000)
+      registrationDeadline: new Date(Date.now() + 18 * 60 * 60 * 1000),
+      difficulty: 'competitive',
+      isHot: true
     }
-  ]
-};
+  ]);
 
-export const EventsTournamentsWidget: React.FC<object> = () => {
-  const [activeTab, setActiveTab] = useState<'live' | 'upcoming' | 'community'>('live');
-  const [data] = useState(mockEventsTournamentsData);
+  // Live countdown для каждого турнира
+  const [countdowns, setCountdowns] = useState<Record<string, CountdownTimer>>({});
 
-  const formatTimeRemaining = (endTime: Date) => {
-    const now = new Date();
-    const diff = endTime.getTime() - now.getTime();
+  // Показать уведомление
+  const showNotification = (message: string, type: Notification['type'] = 'info', duration = 3000) => {
+    const id = Date.now().toString();
+    const notification: Notification = { id, message, type, duration };
+    setNotifications(prev => [...prev, notification]);
     
-    if (diff <= 0) return "Завершен";
-    
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    
-    if (hours > 24) {
-      const days = Math.floor(hours / 24);
-      return `${days}д`;
+    if (duration > 0) {
+      setTimeout(() => {
+        setNotifications(prev => prev.filter(n => n.id !== id));
+      }, duration);
     }
-    if (hours > 0) {
-      return `${hours}ч ${minutes}м`;
-    }
-    return `${minutes}м`;
   };
 
-  const formatStartTime = (startTime: Date) => {
-    const now = new Date();
-    const diff = startTime.getTime() - now.getTime();
-    
-    if (diff <= 0) return "Идет сейчас";
-    
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    
-    if (days > 0) {
-      return `Через ${days}д ${hours}ч`;
+  // Обновление countdown таймеров каждую секунду
+  useEffect(() => {
+    const updateCountdowns = () => {
+      const newCountdowns: Record<string, CountdownTimer> = {};
+      
+      tournaments.forEach(tournament => {
+        const now = new Date().getTime();
+        const targetTime = tournament.status === 'live' 
+          ? tournament.endTime.getTime() 
+          : tournament.startTime.getTime();
+        
+        const diff = targetTime - now;
+        
+        if (diff <= 0) {
+          if (tournament.status === 'live') {
+            newCountdowns[tournament.id] = {
+              days: 0, hours: 0, minutes: 0, seconds: 0, isEnded: true
+            };
+          } else {
+            newCountdowns[tournament.id] = {
+              days: 0, hours: 0, minutes: 0, seconds: 0, isNow: true
+            };
+          }
+        } else {
+          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+          
+          newCountdowns[tournament.id] = { days, hours, minutes, seconds };
+        }
+      });
+      
+      setCountdowns(newCountdowns);
+    };
+
+    updateCountdowns();
+    const interval = setInterval(updateCountdowns, 1000);
+    return () => clearInterval(interval);
+  }, [tournaments]);
+
+  // Симуляция live событий
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (Math.random() < 0.4) {
+        const liveEvents = [
+          '🏆 CS2 Major: NaVi побеждает в раунде!',
+          '🔥 Valorant: Team Liquid делает Ace!',
+          '⚡ Новый турнир открыт для регистрации!',
+          '🎯 Apex ALGS: Triple kill от TSM!'
+        ];
+        
+        const randomEvent = liveEvents[Math.floor(Math.random() * liveEvents.length)];
+        showNotification(randomEvent, 'live', 4000);
+      }
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Симуляция изменений viewers
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTournaments(prev => prev.map(tournament => {
+        if (tournament.status === 'live' && tournament.viewerCount) {
+          const change = Math.floor(Math.random() * 2000) - 1000; // ±1000
+          const newViewers = Math.max(1000, tournament.viewerCount + change);
+          return { ...tournament, viewerCount: newViewers };
+        }
+        return tournament;
+      }));
+    }, 8000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const formatPrizePool = (amount: number) => {
+    if (amount >= 1000000) {
+      return `$${(amount / 1000000).toFixed(1)}M`;
     }
-    if (hours > 0) {
-      return `Через ${hours}ч`;
+    if (amount >= 1000) {
+      return `$${(amount / 1000).toFixed(0)}K`;
     }
-    return "Скоро";
+    return `$${amount}`;
+  };
+
+  const formatViewers = (count: number) => {
+    if (count >= 1000000) {
+      return `${(count / 1000000).toFixed(1)}M`;
+    }
+    if (count >= 1000) {
+      return `${(count / 1000).toFixed(0)}K`;
+    }
+    return count.toString();
   };
 
   const getGameColor = (game: string) => {
@@ -191,249 +269,288 @@ export const EventsTournamentsWidget: React.FC<object> = () => {
     }
   };
 
-  const getStatusBadge = (status: string, isRegistered?: boolean) => {
-    switch (status) {
-      case 'live':
-        return <Badge variant="success" className="text-xs">LIVE</Badge>;
-      case 'upcoming':
-        return <Badge variant="warning" className="text-xs">СКОРО</Badge>;
-      case 'registration':
-        return isRegistered 
-          ? <Badge variant="default" className="text-xs">ЗАРЕГИСТРИРОВАН</Badge>
-          : <Badge variant="default" className="text-xs">РЕГИСТРАЦИЯ</Badge>;
-      default:
-        return null;
+  const getDifficultyBadge = (difficulty: Tournament['difficulty']) => {
+    switch (difficulty) {
+      case 'casual':
+        return <Badge variant="default" className="text-xs bg-green-500/20 text-green-400">Casual</Badge>;
+      case 'competitive':
+        return <Badge variant="default" className="text-xs bg-yellow-500/20 text-yellow-400">Competitive</Badge>;
+      case 'pro':
+        return <Badge variant="default" className="text-xs bg-red-500/20 text-red-400">Pro</Badge>;
     }
   };
 
-  const renderLiveTournaments = () => (
-    <div className="space-y-3">
-      {data.liveTournaments.map((tournament: EventsTournament) => (
-        <div 
-          key={tournament.id}
-          className="p-3 rounded-lg bg-card/50 border border-border hover:border-primary/30 transition-colors duration-200"
-        >
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex-1">
-              <div className="flex items-center space-x-2 mb-1">
-                <span className="text-sm font-medium text-foreground">{tournament.name}</span>
-                <span className={`text-xs font-medium ${getGameColor(tournament.game)}`}>
-                  {tournament.game}
-                </span>
-                {getStatusBadge(tournament.status)}
-              </div>
-              <div className="text-xs text-muted-foreground mb-2">
-                {tournament.description}
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center space-x-3">
-                  <span className="flex items-center space-x-1">
-                    <GroupUsersIcon size={12} className="text-muted-foreground" />
-                    <span className="text-muted-foreground">
-                      {tournament.participants}/{tournament.maxParticipants}
-                    </span>
-                  </span>
-                  <span className="flex items-center space-x-1">
-                    <CalendarIcon size={12} className="text-muted-foreground" />
-                    <span className="text-green-400">
-                      {formatTimeRemaining(tournament.endTime)}
-                    </span>
-                  </span>
-                  <span className="text-yellow-400">
-                    ${tournament.prizePool.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <span className="text-red-400">👁</span>
-                  <span className="text-xs text-muted-foreground">
-                    {tournament.viewerCount?.toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+  const handleRegister = (tournament: Tournament) => {
+    if (tournament.isRegistered) {
+      showNotification(`Вы отменили регистрацию на ${tournament.name}`, 'info');
+      setTournaments(prev => prev.map(t => 
+        t.id === tournament.id ? { ...t, isRegistered: false, participants: t.participants - 1 } : t
+      ));
+    } else {
+      showNotification(`🎮 Регистрация на ${tournament.name} успешна!`, 'success');
+      setTournaments(prev => prev.map(t => 
+        t.id === tournament.id ? { ...t, isRegistered: true, participants: t.participants + 1 } : t
+      ));
+    }
+  };
 
-  const renderUpcomingEvents = () => (
-    <div className="space-y-3">
-      {data.upcomingEvents.map((event: EventsTournament) => (
-        <div 
-          key={event.id}
-          className="p-3 rounded-lg bg-card/50 border border-border hover:border-primary/30 transition-colors duration-200"
-        >
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex-1">
-              <div className="flex items-center space-x-2 mb-1">
-                <span className="text-sm font-medium text-foreground">{event.name}</span>
-                <span className={`text-xs font-medium ${getGameColor(event.game)}`}>
-                  {event.game}
-                </span>
-                {getStatusBadge(event.status, event.isRegistered)}
-              </div>
-              <div className="text-xs text-muted-foreground mb-2">
-                {event.description}
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center space-x-3">
-                  <span className="flex items-center space-x-1">
-                    <CalendarIcon size={12} className="text-muted-foreground" />
-                    <span className="text-blue-400">
-                      {formatStartTime(event.startTime)}
-                    </span>
-                  </span>
-                  <span className="text-yellow-400">
-                    ${event.prizePool.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  {!event.isRegistered && event.registrationDeadline && (
-                    <Button 
-                      variant="default" 
-                      className="text-xs py-1 px-2 h-auto"
-                      onClick={() => console.log('Регистрация на турнир:', event.name)}
-                    >
-                      Регистрация
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+  const handleWatch = (tournament: Tournament) => {
+    showNotification(`📺 Открываю трансляцию ${tournament.name}...`, 'info');
+    // Симуляция увеличения viewers
+    setTimeout(() => {
+      setTournaments(prev => prev.map(t => 
+        t.id === tournament.id && t.viewerCount ? { ...t, viewerCount: t.viewerCount + 1 } : t
+      ));
+    }, 1000);
+  };
 
-  const renderCommunityEvents = () => (
-    <div className="space-y-3">
-      {data.communityEvents.map((event: EventsTournament) => (
-        <div 
-          key={event.id}
-          className="p-3 rounded-lg bg-card/50 border border-border hover:border-primary/30 transition-colors duration-200"
-        >
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex-1">
-              <div className="flex items-center space-x-2 mb-1">
-                <span className="text-sm font-medium text-foreground">{event.name}</span>
-                <span className={`text-xs font-medium ${getGameColor(event.game)}`}>
-                  {event.game}
-                </span>
-                {getStatusBadge(event.status, event.isRegistered)}
-              </div>
-              <div className="text-xs text-muted-foreground mb-2">
-                {event.description} • {event.organizer}
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center space-x-3">
-                  <span className="flex items-center space-x-1">
-                    <GroupUsersIcon size={12} className="text-muted-foreground" />
-                    <span className="text-muted-foreground">
-                      {event.participants}/{event.maxParticipants}
-                    </span>
-                  </span>
-                  <span className="flex items-center space-x-1">
-                    <CalendarIcon size={12} className="text-muted-foreground" />
-                    <span className="text-blue-400">
-                      {formatStartTime(event.startTime)}
-                    </span>
-                  </span>
-                  <span className="text-yellow-400">
-                    ${event.prizePool.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  {!event.isRegistered && (
-                    <Button 
-                      variant="default" 
-                      className="text-xs py-1 px-2 h-auto"
-                      onClick={() => console.log('Участвовать в событии:', event.name)}
-                    >
-                      Участвовать
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+  const renderCountdown = (tournament: Tournament) => {
+    const countdown = countdowns[tournament.id];
+    if (!countdown) return null;
+
+    if (countdown.isEnded) {
+      return <span className="text-xs text-red-400 font-mono">ЗАВЕРШЕН</span>;
+    }
+    
+    if (countdown.isNow && tournament.status !== 'live') {
+      return <span className="text-xs text-green-400 font-mono animate-pulse">НАЧАЛСЯ!</span>;
+    }
+
+    const { days, hours, minutes, seconds } = countdown;
+    
+    if (tournament.status === 'live') {
+      return (
+        <span className="text-xs text-red-400 font-mono">
+          Осталось: {hours.toString().padStart(2, '0')}:{minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
+        </span>
+      );
+    }
+
+    if (days > 0) {
+      return <span className="text-xs text-blue-400 font-mono">{days}д {hours}ч {minutes}м</span>;
+    }
+    
+    if (hours > 0) {
+      return <span className="text-xs text-yellow-400 font-mono">{hours}ч {minutes}м {seconds}с</span>;
+    }
+    
+    return <span className="text-xs text-red-400 font-mono animate-pulse">{minutes}м {seconds}с</span>;
+  };
+
+  const liveTournaments = tournaments.filter(t => t.status === 'live');
+  const upcomingTournaments = tournaments.filter(t => t.status === 'upcoming' || t.status === 'registration');
+  const myTournaments = tournaments.filter(t => t.isRegistered);
+
+  const getCurrentTournaments = () => {
+    switch (activeTab) {
+      case 'live': return liveTournaments;
+      case 'upcoming': return upcomingTournaments;
+      case 'my': return myTournaments;
+      default: return [];
+    }
+  };
 
   return (
-    <div className="bg-card rounded-lg border border-border p-4">
+    <div 
+      className="bg-card/95 backdrop-blur-sm border border-border rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-300"
+      style={{ animationDelay: `${animationDelay}ms` }}
+    >
+      {/* Заголовок */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
-          <TrophyIcon size={16} className="text-primary" />
-          <h3 className="text-sm font-medium text-foreground">События и турниры</h3>
+          <div className="p-2 bg-primary/20 rounded-lg">
+            <TrophyIcon size={20} className="text-primary" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">Турниры и события</h3>
+            <p className="text-xs text-muted-foreground">
+              {liveTournaments.length} турниров live
+            </p>
+          </div>
         </div>
+        
+        {/* Live индикатор */}
+        {liveTournaments.length > 0 && (
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+            <span className="text-xs text-red-400 font-medium">LIVE</span>
+          </div>
+        )}
       </div>
 
+      {/* Live уведомления */}
+      {notifications.length > 0 && (
+        <div className="space-y-1 mb-3">
+          {notifications.slice(-2).map((notification) => (
+            <div
+              key={notification.id}
+              className={`p-2 rounded-lg text-xs animate-slide-in-right ${
+                notification.type === 'success' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+                notification.type === 'warning' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
+                notification.type === 'live' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
+                'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+              }`}
+            >
+              {notification.message}
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Табы */}
-      <div className="grid grid-cols-3 gap-1 mb-4 p-1 bg-card/30 rounded-lg">
+      <div className="flex space-x-1 bg-muted/50 rounded-lg p-1 mb-4">
         <button
           onClick={() => setActiveTab('live')}
-          className={`py-2 px-3 text-xs font-medium rounded-md transition-colors duration-200 ${
+          className={`flex-1 py-2 px-3 rounded-md text-xs font-medium transition-all duration-200 ${
             activeTab === 'live'
-              ? 'bg-primary text-primary-foreground'
-              : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          <span className="inline-block w-2 h-2 bg-red-400 rounded-full mr-1 animate-pulse"></span>
-          Live
+          <div className="flex items-center justify-center gap-1">
+            Live ({liveTournaments.length})
+            {liveTournaments.length > 0 && <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />}
+          </div>
         </button>
         <button
           onClick={() => setActiveTab('upcoming')}
-          className={`py-2 px-3 text-xs font-medium rounded-md transition-colors duration-200 ${
+          className={`flex-1 py-2 px-3 rounded-md text-xs font-medium transition-all duration-200 ${
             activeTab === 'upcoming'
-              ? 'bg-primary text-primary-foreground'
-              : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          <CalendarIcon size={12} className="inline mr-1" />
-          Скоро
+          Скоро ({upcomingTournaments.length})
         </button>
         <button
-          onClick={() => setActiveTab('community')}
-          className={`py-2 px-3 text-xs font-medium rounded-md transition-colors duration-200 ${
-            activeTab === 'community'
-              ? 'bg-primary text-primary-foreground'  
-              : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
+          onClick={() => setActiveTab('my')}
+          className={`flex-1 py-2 px-3 rounded-md text-xs font-medium transition-all duration-200 ${
+            activeTab === 'my'
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          <SparklesIcon size={12} className="inline mr-1" />
-          Сообщество
+          Мои ({myTournaments.length})
         </button>
       </div>
 
       {/* Контент */}
-      <div className="min-h-[300px]">
-        {activeTab === 'live' && renderLiveTournaments()}
-        {activeTab === 'upcoming' && renderUpcomingEvents()}
-        {activeTab === 'community' && renderCommunityEvents()}
+      <div className="space-y-2 min-h-[120px]">
+        {getCurrentTournaments().slice(0, 3).map((tournament) => (
+          <div 
+            key={tournament.id}
+            className="p-3 bg-accent/30 rounded-lg border border-border/50 hover:bg-accent/50 transition-all duration-200 group"
+          >
+            {/* Заголовок турнира */}
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <h4 className="text-sm font-medium text-foreground">{tournament.name}</h4>
+                  {tournament.isHot && <SparklesIcon size={12} className="text-yellow-400" />}
+                  {tournament.status === 'live' && (
+                    <Badge variant="default" className="text-xs bg-red-500/20 text-red-400">LIVE</Badge>
+                  )}
+                  {tournament.status === 'registration' && (
+                    <Badge variant="default" className="text-xs bg-green-500/20 text-green-400">РЕГИСТРАЦИЯ</Badge>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className={getGameColor(tournament.game)}>{tournament.game}</span>
+                  <span>•</span>
+                  <span>{formatPrizePool(tournament.prizePool)}</span>
+                  <span>•</span>
+                  <span>{tournament.participants}/{tournament.maxParticipants}</span>
+                  {getDifficultyBadge(tournament.difficulty)}
+                </div>
+              </div>
+            </div>
+
+            {/* Live score для live турниров */}
+            {tournament.status === 'live' && tournament.liveScore && (
+              <div className="mb-2 p-2 bg-red-500/10 border border-red-500/20 rounded text-xs">
+                <span className="text-red-400 font-medium">🔴 {tournament.liveScore}</span>
+                {tournament.viewerCount && (
+                  <span className="text-muted-foreground ml-2">
+                    👥 {formatViewers(tournament.viewerCount)} viewers
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Countdown */}
+            <div className="mb-2">
+              {renderCountdown(tournament)}
+            </div>
+
+            {/* Действия */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {tournament.status === 'live' ? (
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="h-6 px-2 text-xs text-red-400 hover:bg-red-500/20"
+                    onClick={() => handleWatch(tournament)}
+                  >
+                    📺 Смотреть
+                  </Button>
+                ) : (
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className={`h-6 px-2 text-xs ${
+                      tournament.isRegistered 
+                        ? 'text-green-400 hover:bg-green-500/20' 
+                        : 'text-blue-400 hover:bg-blue-500/20'
+                    }`}
+                    onClick={() => handleRegister(tournament)}
+                  >
+                    {tournament.isRegistered ? '✓ Зарегистрирован' : '🎮 Участвовать'}
+                  </Button>
+                )}
+              </div>
+              
+              <div className="text-xs text-muted-foreground">
+                {tournament.organizer}
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {getCurrentTournaments().length === 0 && (
+          <div className="text-center py-6">
+            <div className="text-3xl mb-2">🏆</div>
+            <p className="text-sm text-muted-foreground">
+              {activeTab === 'live' && 'Нет активных турниров'}
+              {activeTab === 'upcoming' && 'Нет предстоящих турниров'}
+              {activeTab === 'my' && 'Вы не участвуете в турнирах'}
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* Кнопки действий */}
-      <div className="flex space-x-2 mt-4 pt-4 border-t border-border">
-        <Button 
-          variant="default" 
-          className="flex-1 text-xs py-2"
-          onClick={() => console.log('Создать турнир')}
-        >
-          <GameControllerIcon size={14} className="mr-1" />
-          Создать
-        </Button>
-        <Button 
-          variant="default" 
-          className="flex-1 text-xs py-2"
-          onClick={() => console.log('Все турниры')}
-        >
-          <TrophyIcon size={14} className="mr-1" />
-          Все турниры
-        </Button>
+      {/* Быстрые действия */}
+      <div className="pt-3 border-t border-border mt-4">
+        <div className="flex space-x-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="flex-1 text-xs flex items-center gap-1 hover:bg-primary/20"
+            onClick={() => showNotification('Открываю браузер турниров...', 'info')}
+          >
+            <CalendarIcon size={12} />
+            Все турниры
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="flex-1 text-xs flex items-center gap-1 hover:bg-primary/20"
+            onClick={() => showNotification('Создаю новый турнир...', 'info')}
+          >
+            <TrophyIcon size={12} />
+            Создать
+          </Button>
+        </div>
       </div>
     </div>
   );

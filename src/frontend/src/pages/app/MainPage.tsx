@@ -1,6 +1,6 @@
 import React from 'react';
 import { Sidebar } from '../../components/app/sidebar/Sidebar';
-import { MainArea } from '../../components/app/main/MainArea';
+import { Header } from '../../components/app/layout/Header';
 import { GamingLobbiesWidget } from '../../components/app/dashboard/widgets/GamingLobbiesWidget';
 import { StatsAchievementsWidget } from '../../components/app/dashboard/widgets/StatsAchievementsWidget';
 import { NewsUpdatesWidget } from '../../components/app/dashboard/widgets/NewsUpdatesWidget';
@@ -16,7 +16,7 @@ export const MainPage: React.FC = () => {
       
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col">
-        <MainArea />
+        <Header />
         
         {/* Dashboard Widgets Grid */}
         <div className="flex-1 p-6">

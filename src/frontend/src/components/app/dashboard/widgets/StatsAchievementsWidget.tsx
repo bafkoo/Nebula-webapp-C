@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '../../../ui/Button';
 import { Badge } from '../../../ui/Badge';
-import { TrophyIcon, BarChartIcon, SparklesIcon, GameControllerIcon } from '../../../icons';
+import { TrophyIcon, SparklesIcon, GameControllerIcon } from '../../../icons';
 
 // Типы для Stats & Achievements Widget
 interface GameStats {
@@ -453,7 +453,7 @@ export const StatsAchievementsWidget: React.FC<object> = () => {
               : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
           }`}
         >
-          <BarChartIcon size={12} className="inline mr-1" />
+          <TrophyIcon size={12} className="inline mr-1" />
           Статистика
         </button>
         <button
@@ -489,17 +489,17 @@ export const StatsAchievementsWidget: React.FC<object> = () => {
 
       {/* Кнопки действий */}
       <div className="flex space-x-2 mt-4 pt-4 border-t border-border">
-        <Button 
-          variant="default" 
-          className="flex-1 text-xs py-2"
+        <Button
+          size="sm" 
+          variant="primary"
           onClick={() => console.log('Детальная статистика')}
         >
-          <BarChartIcon size={14} className="mr-1" />
+          <TrophyIcon size={14} className="mr-1" />
           Подробнее
         </Button>
-        <Button 
-          variant="default" 
-          className="flex-1 text-xs py-2"
+        <Button
+          variant="primary"
+          className="w-full"
           onClick={() => console.log('Поделиться достижениями')}
         >
           <GameControllerIcon size={14} className="mr-1" />

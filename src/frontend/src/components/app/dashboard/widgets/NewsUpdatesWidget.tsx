@@ -1,153 +1,281 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../../../ui/Button';
 import { Badge } from '../../../ui/Badge';
-import { NewsIcon, BellIcon, GroupUsersIcon, SparklesIcon } from '../../../icons';
+import { 
+  AnnouncementIcon, 
+  SparklesIcon
+} from '../../../icons';
 
-// Типы для News & Updates Widget
+// Локальные типы для полной независимости виджета
 interface NewsItem {
   id: string;
   title: string;
-  type: 'update' | 'patch' | 'event' | 'maintenance';
+  type: 'breaking' | 'update' | 'patch' | 'tournament' | 'community';
   priority: 'low' | 'medium' | 'high' | 'critical';
   content: string;
   timestamp: Date;
   read: boolean;
   game?: string;
+  likes: number;
+  comments: number;
+  shares: number;
+  isBreaking?: boolean;
+  isPersonalized?: boolean;
+  aiScore?: number;
+  tags: string[];
+  source: string;
+  imageUrl?: string;
+  upvotes?: number;
+  trending?: boolean;
 }
 
-interface Announcement {
+interface Notification {
   id: string;
-  title: string;
-  content: string;
-  type: 'general' | 'tournament' | 'maintenance' | 'feature';
-  priority: 'low' | 'medium' | 'high';
-  timestamp: Date;
-  read: boolean;
-  author: string;
+  message: string;
+  type: 'success' | 'info' | 'warning' | 'breaking';
+  duration?: number;
 }
 
-interface FriendActivity {
-  id: string;
-  friendName: string;
-  activity: string;
-  game?: string;
-  timestamp: Date;
-  type: 'playing' | 'achievement' | 'status' | 'joined';
+interface FeedFilter {
+  type: 'all' | 'personalized' | 'trending' | 'breaking';
+  games: string[];
+  priority: string[];
 }
 
-interface NewsUpdatesData {
-  news: NewsItem[];
-  announcements: Announcement[];
-  friendsActivity: FriendActivity[];
-  unreadCount: {
-    news: number;
-    announcements: number;
-    friendsActivity: number;
-  };
+interface NewsUpdatesWidgetProps {
+  animationDelay?: number;
 }
 
-// Mockup данные
-const mockNewsUpdatesData: NewsUpdatesData = {
-  news: [
+export const NewsUpdatesWidget: React.FC<NewsUpdatesWidgetProps> = ({
+  animationDelay = 0
+}) => {
+  const [activeTab, setActiveTab] = useState<'feed' | 'notifications' | 'trending'>('feed');
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [filter, setFilter] = useState<FeedFilter>({
+    type: 'all',
+    games: [],
+    priority: []
+  });
+  const [news, setNews] = useState<NewsItem[]>([
     {
       id: "1",
-      title: "CS2 Major Update 1.3.5",
+      title: "🔥 CS2 MAJOR: NaVi vs G2 Finals LIVE",
+      type: "breaking",
+      priority: "critical",
+      content: "Финал Major Championships началась! NaVi ведет 2:1 в BO5",
+      timestamp: new Date(Date.now() - 5 * 60 * 1000), // 5 мин
+      read: false,
+      game: "CS2",
+      likes: 1250,
+      comments: 89,
+      shares: 156,
+      isBreaking: true,
+      aiScore: 98,
+      tags: ["live", "major", "finals"],
+      source: "ESL Official",
+      trending: true,
+      upvotes: 2341
+    },
+    {
+      id: "2",
+      title: "Valorant Episode 9 с новым агентом Vyse",
       type: "update",
       priority: "high",
-      content: "Новые карты, исправления багов и балансировка оружия",
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 часа назад
+      content: "Революционные способности и новые карты уже доступны",
+      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
       read: false,
-      game: "CS2"
-    },
-    {
-      id: "2",
-      title: "Valorant Episode 8 Act 2",
-      type: "patch",
-      priority: "medium",
-      content: "Новый агент Clove и обновления карт",
-      timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000), // 6 часов назад
-      read: true,
-      game: "Valorant"
-    },
-    {
-      id: "3",
-      title: "Dota 2 The International",
-      type: "event",
-      priority: "critical",
-      content: "Началась регистрация на крупнейший турнир года",
-      timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000), // 12 часов назад
-      read: false,
-      game: "Dota 2"
-    }
-  ],
-  announcements: [
-    {
-      id: "1",
-      title: "Техническое обслуживание серверов",
-      content: "Запланированное обслуживание с 03:00 до 05:00 МСК",
-      type: "maintenance",
-      priority: "high",
-      timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 час назад
-      read: false,
-      author: "Nebula Team"
-    },
-    {
-      id: "2",
-      title: "Новые функции в Discord интеграции",
-      content: "Улучшенная синхронизация статуса и активности",
-      type: "feature",
-      priority: "medium",
-      timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000), // 4 часа назад
-      read: true,
-      author: "Dev Team"
-    },
-    {
-      id: "3",
-      title: "Еженедельный турнир по CS2",
-      content: "Регистрация открыта до пятницы 18:00",
-      type: "tournament",
-      priority: "medium",
-      timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000), // 8 часов назад
-      read: false,
-      author: "Tournament Organizer"
-    }
-  ],
-  friendsActivity: [
-    {
-      id: "1",
-      friendName: "ProGamer_Elite",
-      activity: "Достиг ранга Global Elite",
-      game: "CS2",
-      timestamp: new Date(Date.now() - 30 * 60 * 1000), // 30 минут назад
-      type: "achievement"
-    },
-    {
-      id: "2",
-      friendName: "ValorantMaster",
-      activity: "Играет в Valorant",
       game: "Valorant",
-      timestamp: new Date(Date.now() - 45 * 60 * 1000), // 45 минут назад
-      type: "playing"
+      likes: 892,
+      comments: 145,
+      shares: 67,
+      isPersonalized: true,
+      aiScore: 85,
+      tags: ["agent", "update", "vyse"],
+      source: "Riot Games",
+      trending: true,
+      upvotes: 1456
     },
     {
       id: "3",
-      friendName: "DotaLegend",
-      activity: "Присоединился к серверу Dota 2 Pro",
+      title: "Dota 2 International: $18M призовой фонд",
+      type: "tournament",
+      priority: "high",
+      content: "Крупнейший призовой фонд в истории киберспорта побит!",
+      timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000),
+      read: true,
       game: "Dota 2",
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 часа назад
-      type: "joined"
+      likes: 2456,
+      comments: 234,
+      shares: 345,
+      aiScore: 92,
+      tags: ["international", "prizepool", "record"],
+      source: "Valve Corp",
+      trending: true,
+      upvotes: 3421
+    },
+    {
+      id: "4",
+      title: "Nebula Chat достиг 1M пользователей!",
+      type: "community",
+      priority: "medium",
+      content: "Спасибо нашему невероятному сообществу геймеров 🎉",
+      timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000),
+      read: false,
+      game: undefined,
+      likes: 5672,
+      comments: 432,
+      shares: 891,
+      isPersonalized: true,
+      aiScore: 78,
+      tags: ["milestone", "community", "achievement"],
+      source: "Nebula Team",
+      upvotes: 7834
+    },
+    {
+      id: "5",
+      title: "Apex Legends: Season 19 Battle Pass утечка",
+      type: "update",
+      priority: "medium",
+      content: "Новые скины и легенда Catalyst подтверждены датамайнерами",
+      timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000),
+      read: true,
+      game: "Apex Legends",
+      likes: 678,
+      comments: 89,
+      shares: 34,
+      aiScore: 72,
+      tags: ["leak", "season19", "battlepass"],
+      source: "ApexLeaks",
+      upvotes: 1234
+    },
+    {
+      id: "6",
+      title: "NVIDIA RTX 4090 цены упали на 30%",
+      type: "update",
+      priority: "medium",
+      content: "Лучшее время для апгрейда геймерской установки",
+      timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000),
+      read: false,
+      game: undefined,
+      likes: 1890,
+      comments: 267,
+      shares: 445,
+      isPersonalized: true,
+      aiScore: 81,
+      tags: ["hardware", "nvidia", "price"],
+      source: "TechNews",
+      upvotes: 2567
     }
-  ],
-  unreadCount: {
-    news: 2,
-    announcements: 2,
-    friendsActivity: 3
-  }
-};
+  ]);
 
-export const NewsUpdatesWidget: React.FC<object> = () => {
-  const [activeTab, setActiveTab] = useState<'news' | 'announcements' | 'friends'>('news');
-  const [data] = useState(mockNewsUpdatesData);
+  // AI персонализация feed
+  const [personalizedFeed, setPersonalizedFeed] = useState<NewsItem[]>([]);
+  const [trendingFeed, setTrendingFeed] = useState<NewsItem[]>([]);
+
+  // Показать уведомление
+  const showNotification = (message: string, type: Notification['type'] = 'info', duration = 3000) => {
+    const id = Date.now().toString();
+    const notification: Notification = { id, message, type, duration };
+    setNotifications(prev => [...prev, notification]);
+    
+    if (duration > 0) {
+      setTimeout(() => {
+        setNotifications(prev => prev.filter(n => n.id !== id));
+      }, duration);
+    }
+  };
+
+  // AI алгоритм персонализации
+  useEffect(() => {
+    const personalizeNews = () => {
+      // Симуляция AI скоринга на основе предпочтений пользователя
+      const scored = news.map(item => {
+        let score = item.aiScore || 50;
+        
+        // Бонус за игры которые пользователь играет
+        if (item.game === 'CS2') score += 15;
+        if (item.game === 'Valorant') score += 10;
+        
+        // Бонус за breaking news
+        if (item.isBreaking) score += 20;
+        
+        // Бонус за высокую активность
+        if (item.likes > 1000) score += 10;
+        if (item.upvotes && item.upvotes > 2000) score += 15;
+        
+        // Штраф за прочитанные новости
+        if (item.read) score -= 30;
+        
+        // Бонус за недавние новости
+        const hoursAgo = (Date.now() - item.timestamp.getTime()) / (1000 * 60 * 60);
+        if (hoursAgo < 2) score += 25;
+        else if (hoursAgo < 6) score += 10;
+        
+        return { ...item, personalizedScore: score };
+      });
+      
+      setPersonalizedFeed(scored.sort((a, b) => (b.personalizedScore || 0) - (a.personalizedScore || 0)));
+    };
+
+    const trendingAlgorithm = () => {
+      // Trending алгоритм на основе engagement
+      const trending = news.map(item => {
+        const engagement = item.likes + item.comments * 3 + item.shares * 5 + (item.upvotes || 0) * 0.5;
+        const hoursAgo = (Date.now() - item.timestamp.getTime()) / (1000 * 60 * 60);
+        const trendingScore = engagement / Math.max(hoursAgo, 0.5); // Velocity score
+        
+        return { ...item, trendingScore };
+      });
+      
+      setTrendingFeed(trending.sort((a, b) => (b.trendingScore || 0) - (a.trendingScore || 0)));
+    };
+
+    personalizeNews();
+    trendingAlgorithm();
+  }, [news]);
+
+  // Симуляция real-time обновлений
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Обновляем лайки и комментарии
+      setNews(prev => prev.map(item => {
+        if (Math.random() < 0.3) {
+          const likesIncrease = Math.floor(Math.random() * 10);
+          const commentsIncrease = Math.floor(Math.random() * 3);
+          
+          return {
+            ...item,
+            likes: item.likes + likesIncrease,
+            comments: item.comments + commentsIncrease,
+            upvotes: (item.upvotes || 0) + Math.floor(Math.random() * 5)
+          };
+        }
+        return item;
+      }));
+    }, 8000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Breaking news симуляция
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (Math.random() < 0.3) {
+        const breakingNews = [
+          '🚨 CS2 Major: Upset! Underdog team в финале!',
+          '⚡ Valorant: Внезапный hotfix изменил мету!',
+          '🔥 Новый рекорд concurrent players в Steam!',
+          '💰 Крупнейшая киберспорт сделка года!',
+          '🎮 Эксклюзивная игра станет free-to-play!'
+        ];
+        
+        const randomNews = breakingNews[Math.floor(Math.random() * breakingNews.length)];
+        showNotification(randomNews, 'breaking', 5000);
+      }
+    }, 20000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const formatTimeAgo = (timestamp: Date) => {
     const now = new Date();
@@ -155,14 +283,11 @@ export const NewsUpdatesWidget: React.FC<object> = () => {
     const minutes = Math.floor(diff / (1000 * 60));
     const hours = Math.floor(diff / (1000 * 60 * 60));
     
-    if (minutes < 60) {
-      return `${minutes}м назад`;
-    }
-    if (hours < 24) {
-      return `${hours}ч назад`;
-    }
+    if (minutes < 1) return 'сейчас';
+    if (minutes < 60) return `${minutes}м`;
+    if (hours < 24) return `${hours}ч`;
     const days = Math.floor(hours / 24);
-    return `${days}д назад`;
+    return `${days}д`;
   };
 
   const getGameColor = (game?: string) => {
@@ -171,246 +296,343 @@ export const NewsUpdatesWidget: React.FC<object> = () => {
       case 'CS2': return 'text-orange-400';
       case 'Valorant': return 'text-red-400';
       case 'Dota 2': return 'text-blue-400';
+      case 'Apex Legends': return 'text-purple-400';
       default: return 'text-gray-400';
     }
   };
 
-  const getPriorityBadge = (priority: string) => {
+  const getPriorityIndicator = (priority: string, isBreaking?: boolean) => {
+    if (isBreaking) {
+      return <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />;
+    }
+    
     switch (priority) {
       case 'critical':
-        return <Badge variant="destructive" className="text-xs">КРИТИЧНО</Badge>;
+        return <div className="w-2 h-2 bg-red-500 rounded-full" />;
       case 'high':
-        return <Badge variant="warning" className="text-xs">ВАЖНО</Badge>;
+        return <div className="w-2 h-2 bg-yellow-500 rounded-full" />;
       case 'medium':
-        return <Badge variant="default" className="text-xs">СРЕДНЕ</Badge>;
-      case 'low':
-        return <Badge variant="default" className="text-xs">НИЗКО</Badge>;
+        return <div className="w-2 h-2 bg-blue-500 rounded-full" />;
       default:
-        return null;
+        return <div className="w-2 h-2 bg-gray-500 rounded-full" />;
     }
   };
 
-  const getNewsTypeEmoji = (type: string) => {
-    switch (type) {
-      case 'update': return '🔄';
-      case 'patch': return '🛠️';
-      case 'event': return '🎉';
-      case 'maintenance': return '⚠️';
-      case 'tournament': return '🏆';
-      case 'feature': return '✨';
-      case 'general': return '📢';
-      default: return '📰';
+  const handleLike = (newsId: string) => {
+    setNews(prev => prev.map(item => 
+      item.id === newsId 
+        ? { ...item, likes: item.likes + 1 }
+        : item
+    ));
+    showNotification('👍 Лайк добавлен!', 'success', 1500);
+  };
+
+  const handleShare = (newsId: string, title: string) => {
+    setNews(prev => prev.map(item => 
+      item.id === newsId 
+        ? { ...item, shares: item.shares + 1 }
+        : item
+    ));
+    showNotification(`📤 "${title}" отправлено друзьям!`, 'info', 2000);
+  };
+
+  const markAsRead = (newsId: string) => {
+    setNews(prev => prev.map(item => 
+      item.id === newsId ? { ...item, read: true } : item
+    ));
+  };
+
+  const getCurrentFeed = () => {
+    switch (activeTab) {
+      case 'feed':
+        return filter.type === 'personalized' ? personalizedFeed : 
+               filter.type === 'trending' ? trendingFeed :
+               news;
+      case 'notifications':
+        return news.filter(item => !item.read);
+      case 'trending':
+        return trendingFeed;
+      default:
+        return news;
     }
   };
 
-  const getActivityEmoji = (type: string) => {
-    switch (type) {
-      case 'playing': return '🎮';
-      case 'achievement': return '🏆';
-      case 'status': return '💬';
-      case 'joined': return '🚪';
-      default: return '👤';
-    }
+  const formatEngagement = (num: number) => {
+    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+    return num.toString();
   };
 
-  const renderNews = () => (
-    <div className="space-y-3">
-      {data.news.map((item: NewsItem) => (
-        <div 
-          key={item.id}
-          className={`p-3 rounded-lg border transition-colors duration-200 ${
-            item.read 
-              ? 'bg-card/30 border-border hover:border-border' 
-              : 'bg-card/50 border-primary/30 hover:border-primary/50'
-          }`}
-        >
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex-1">
-              <div className="flex items-center space-x-2 mb-1">
-                <span className="text-sm">{getNewsTypeEmoji(item.type)}</span>
-                <span className="text-sm font-medium text-foreground">{item.title}</span>
-                {item.game && (
-                  <span className={`text-xs font-medium ${getGameColor(item.game)}`}>
-                    {item.game}
-                  </span>
-                )}
-                {getPriorityBadge(item.priority)}
-              </div>
-              <div className="text-xs text-muted-foreground mb-2">
-                {item.content}
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">
-                  {formatTimeAgo(item.timestamp)}
-                </span>
-                {!item.read && (
-                  <span className="w-2 h-2 bg-primary rounded-full"></span>
-                )}
-              </div>
+  return (
+    <div 
+      className="bg-card/95 backdrop-blur-sm border border-border rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-300"
+      style={{ animationDelay: `${animationDelay}ms` }}
+    >
+      {/* Заголовок с AI индикатором */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center space-x-2">
+          <div className="p-2 bg-primary/20 rounded-lg">
+            <AnnouncementIcon size={20} className="text-primary" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">Новости и обновления</h3>
+            <div className="flex items-center gap-1">
+              <SparklesIcon size={12} className="text-yellow-400" />
+              <p className="text-xs text-muted-foreground">AI персонализация</p>
             </div>
           </div>
         </div>
-      ))}
-    </div>
-  );
+        
+        {/* Breaking индикатор */}
+        {news.some(item => item.isBreaking) && (
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+            <span className="text-xs text-red-400 font-medium">BREAKING</span>
+          </div>
+        )}
+      </div>
 
-  const renderAnnouncements = () => (
-    <div className="space-y-3">
-      {data.announcements.map((announcement: Announcement) => (
-        <div 
-          key={announcement.id}
-          className={`p-3 rounded-lg border transition-colors duration-200 ${
-            announcement.read 
-              ? 'bg-card/30 border-border hover:border-border' 
-              : 'bg-card/50 border-primary/30 hover:border-primary/50'
-          }`}
-        >
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex-1">
-              <div className="flex items-center space-x-2 mb-1">
-                <span className="text-sm">{getNewsTypeEmoji(announcement.type)}</span>
-                <span className="text-sm font-medium text-foreground">{announcement.title}</span>
-                {getPriorityBadge(announcement.priority)}
-              </div>
-              <div className="text-xs text-muted-foreground mb-2">
-                {announcement.content}
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-blue-400">{announcement.author}</span>
-                <div className="flex items-center space-x-2">
-                  <span className="text-muted-foreground">
-                    {formatTimeAgo(announcement.timestamp)}
-                  </span>
-                  {!announcement.read && (
-                    <span className="w-2 h-2 bg-primary rounded-full"></span>
+      {/* Live уведомления */}
+      {notifications.length > 0 && (
+        <div className="space-y-1 mb-3">
+          {notifications.slice(-2).map((notification) => (
+            <div
+              key={notification.id}
+              className={`p-2 rounded-lg text-xs animate-slide-in-right ${
+                notification.type === 'success' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+                notification.type === 'warning' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
+                notification.type === 'breaking' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
+                'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+              }`}
+            >
+              {notification.message}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Табы и фильтры */}
+      <div className="space-y-2 mb-4">
+        {/* Главные табы */}
+        <div className="flex space-x-1 bg-muted/50 rounded-lg p-1">
+          <button
+            onClick={() => setActiveTab('feed')}
+            className={`flex-1 py-2 px-3 rounded-md text-xs font-medium transition-all duration-200 ${
+              activeTab === 'feed'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Лента
+          </button>
+          <button
+            onClick={() => setActiveTab('notifications')}
+            className={`flex-1 py-2 px-3 rounded-md text-xs font-medium transition-all duration-200 ${
+              activeTab === 'notifications'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <div className="flex items-center justify-center gap-1">
+              Уведомления
+              {news.filter(item => !item.read).length > 0 && (
+                <Badge variant="default" className="text-xs bg-red-500/20 text-red-400 px-1">
+                  {news.filter(item => !item.read).length}
+                </Badge>
+              )}
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('trending')}
+            className={`flex-1 py-2 px-3 rounded-md text-xs font-medium transition-all duration-200 ${
+              activeTab === 'trending'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            🔥 Trending
+          </button>
+        </div>
+
+        {/* AI фильтры для ленты */}
+        {activeTab === 'feed' && (
+          <div className="flex space-x-1">
+            <button
+              onClick={() => setFilter(prev => ({ ...prev, type: 'all' }))}
+              className={`px-2 py-1 rounded text-xs transition-all ${
+                filter.type === 'all'
+                  ? 'bg-primary/20 text-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Все
+            </button>
+            <button
+              onClick={() => setFilter(prev => ({ ...prev, type: 'personalized' }))}
+              className={`px-2 py-1 rounded text-xs transition-all flex items-center gap-1 ${
+                filter.type === 'personalized'
+                  ? 'bg-yellow-500/20 text-yellow-400'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <SparklesIcon size={10} />
+              Для меня
+            </button>
+            <button
+              onClick={() => setFilter(prev => ({ ...prev, type: 'trending' }))}
+              className={`px-2 py-1 rounded text-xs transition-all ${
+                filter.type === 'trending'
+                  ? 'bg-red-500/20 text-red-400'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              🔥 Горячее
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Контент новостей */}
+      <div className="space-y-2 min-h-[160px] max-h-[320px] overflow-y-auto custom-scrollbar">
+        {getCurrentFeed().slice(0, 6).map((item) => (
+          <div 
+            key={item.id}
+            className={`p-3 rounded-lg border transition-all duration-200 group cursor-pointer ${
+              item.read 
+                ? 'bg-accent/20 border-border/50 opacity-75' 
+                : 'bg-accent/30 border-border/50 hover:bg-accent/50'
+            } ${item.isBreaking ? 'ring-1 ring-red-500/50' : ''}`}
+            onClick={() => markAsRead(item.id)}
+          >
+            {/* Заголовок и метаданные */}
+            <div className="flex items-start gap-2 mb-2">
+              {getPriorityIndicator(item.priority, item.isBreaking)}
+              <div className="flex-1">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h4 className={`text-sm font-medium ${
+                      item.isBreaking ? 'text-red-400' : 'text-foreground'
+                    } line-clamp-2`}>
+                      {item.title}
+                    </h4>
+                    <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                      <span>{item.source}</span>
+                      <span>•</span>
+                      <span>{formatTimeAgo(item.timestamp)}</span>
+                      {item.game && (
+                        <>
+                          <span>•</span>
+                          <span className={getGameColor(item.game)}>{item.game}</span>
+                        </>
+                      )}
+                      {item.isPersonalized && (
+                        <>
+                          <span>•</span>
+                          <SparklesIcon size={10} className="text-yellow-400" />
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  {item.trending && (
+                    <div className="text-xs text-red-400">🔥</div>
                   )}
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
 
-  const renderFriendsActivity = () => (
-    <div className="space-y-3">
-      {data.friendsActivity.map((activity: FriendActivity) => (
-        <div 
-          key={activity.id}
-          className="p-3 rounded-lg bg-card/50 border border-border hover:border-primary/30 transition-colors duration-200"
-        >
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex-1">
-              <div className="flex items-center space-x-2 mb-1">
-                <span className="text-sm">{getActivityEmoji(activity.type)}</span>
-                <span className="text-sm font-medium text-foreground">{activity.friendName}</span>
-                {activity.game && (
-                  <span className={`text-xs font-medium ${getGameColor(activity.game)}`}>
-                    {activity.game}
-                  </span>
-                )}
+            {/* Содержание */}
+            <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
+              {item.content}
+            </p>
+
+            {/* Теги */}
+            {item.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-2">
+                {item.tags.slice(0, 3).map((tag) => (
+                  <Badge key={tag} variant="default" className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary">
+                    #{tag}
+                  </Badge>
+                ))}
               </div>
-              <div className="text-xs text-muted-foreground mb-2">
-                {activity.activity}
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">
-                  {formatTimeAgo(activity.timestamp)}
+            )}
+
+            {/* Engagement метрики */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <button 
+                  className="flex items-center gap-1 hover:text-red-400 transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleLike(item.id);
+                  }}
+                >
+                  <span>👍</span>
+                  <span>{formatEngagement(item.likes)}</span>
+                </button>
+                <span className="flex items-center gap-1">
+                  <span>💬</span>
+                  <span>{formatEngagement(item.comments)}</span>
                 </span>
+                <button 
+                  className="flex items-center gap-1 hover:text-blue-400 transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleShare(item.id, item.title);
+                  }}
+                >
+                  <span>📤</span>
+                  <span>{formatEngagement(item.shares)}</span>
+                </button>
               </div>
+              
+              {item.aiScore && filter.type === 'personalized' && (
+                <div className="text-xs text-yellow-400">
+                  AI: {item.aiScore}%
+                </div>
+              )}
+              
+              {item.upvotes && filter.type === 'trending' && (
+                <div className="text-xs text-red-400">
+                  ↗ {formatEngagement(item.upvotes)}
+                </div>
+              )}
             </div>
           </div>
+        ))}
+
+        {getCurrentFeed().length === 0 && (
+          <div className="text-center py-8">
+            <div className="text-3xl mb-2">📰</div>
+            <p className="text-sm text-muted-foreground">
+              {activeTab === 'feed' && 'Нет новостей в ленте'}
+              {activeTab === 'notifications' && 'Все уведомления прочитаны'}
+              {activeTab === 'trending' && 'Нет трендовых новостей'}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Быстрые действия */}
+      <div className="pt-3 border-t border-border mt-4">
+        <div className="flex space-x-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="flex-1 text-xs flex items-center gap-1 hover:bg-primary/20"
+            onClick={() => showNotification('Обновляю ленту новостей...', 'info')}
+          >
+            <AnnouncementIcon size={12} />
+            Обновить
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="flex-1 text-xs flex items-center gap-1 hover:bg-primary/20"
+            onClick={() => showNotification('Настройки персонализации открыты', 'info')}
+          >
+            <SparklesIcon size={12} />
+            Настроить AI
+          </Button>
         </div>
-      ))}
-    </div>
-  );
-
-  return (
-    <div className="bg-card rounded-lg border border-border p-4">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center space-x-2">
-          <NewsIcon size={16} className="text-primary" />
-          <h3 className="text-sm font-medium text-foreground">Новости и обновления</h3>
-        </div>
-      </div>
-
-      {/* Табы */}
-      <div className="grid grid-cols-3 gap-1 mb-4 p-1 bg-card/30 rounded-lg">
-        <button
-          onClick={() => setActiveTab('news')}
-          className={`py-2 px-3 text-xs font-medium rounded-md transition-colors duration-200 ${
-            activeTab === 'news'
-              ? 'bg-primary text-primary-foreground'
-              : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
-          }`}
-        >
-          <NewsIcon size={12} className="inline mr-1" />
-          Новости
-          {data.unreadCount.news > 0 && (
-            <span className="ml-1 px-1.5 py-0.5 bg-destructive text-destructive-foreground rounded-full text-xs">
-              {data.unreadCount.news}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab('announcements')}
-          className={`py-2 px-3 text-xs font-medium rounded-md transition-colors duration-200 ${
-            activeTab === 'announcements'
-              ? 'bg-primary text-primary-foreground'
-              : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
-          }`}
-        >
-          <BellIcon size={12} className="inline mr-1" />
-          Объявления
-          {data.unreadCount.announcements > 0 && (
-            <span className="ml-1 px-1.5 py-0.5 bg-destructive text-destructive-foreground rounded-full text-xs">
-              {data.unreadCount.announcements}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab('friends')}
-          className={`py-2 px-3 text-xs font-medium rounded-md transition-colors duration-200 ${
-            activeTab === 'friends'
-              ? 'bg-primary text-primary-foreground'
-              : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
-          }`}
-        >
-          <GroupUsersIcon size={12} className="inline mr-1" />
-          Друзья
-          {data.unreadCount.friendsActivity > 0 && (
-            <span className="ml-1 px-1.5 py-0.5 bg-destructive text-destructive-foreground rounded-full text-xs">
-              {data.unreadCount.friendsActivity}
-            </span>
-          )}
-        </button>
-      </div>
-
-      {/* Контент */}
-      <div className="min-h-[300px]">
-        {activeTab === 'news' && renderNews()}
-        {activeTab === 'announcements' && renderAnnouncements()}
-        {activeTab === 'friends' && renderFriendsActivity()}
-      </div>
-
-      {/* Кнопки действий */}
-      <div className="flex space-x-2 mt-4 pt-4 border-t border-border">
-        <Button 
-          variant="default" 
-          className="flex-1 text-xs py-2"
-          onClick={() => console.log('Отметить все как прочитанное')}
-        >
-          Прочитано
-        </Button>
-        <Button 
-          variant="default" 
-          className="flex-1 text-xs py-2"
-          onClick={() => console.log('Все новости')}
-        >
-          <SparklesIcon size={14} className="mr-1" />
-          Все новости
-        </Button>
       </div>
     </div>
   );

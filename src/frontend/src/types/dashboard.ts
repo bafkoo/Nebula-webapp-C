@@ -79,7 +79,7 @@ export interface GameActivity {
   duration?: number;
 }
 
-export type GameStatus = 'В матче' | 'В лобби' | 'В меню' | 'Стримит' | 'Отошел';
+export type GameStatus = 'В матче' | 'В лобби' | 'В меню' | 'Стримит' | 'Отошел' | 'AFK';
 
 // ⚡ Quick Connections Widget
 export interface QuickConnectionsData {

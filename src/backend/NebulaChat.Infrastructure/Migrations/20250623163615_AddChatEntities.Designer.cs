@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NebulaChat.Infrastructure.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NebulaChat.Infrastructure.Migrations
 {
     [DbContext(typeof(NebulaChatDbContext))]
-    partial class NebulaChatDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250623163615_AddChatEntities")]
+    partial class AddChatEntities
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -29,8 +32,7 @@ namespace NebulaChat.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("AvatarUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -39,8 +41,8 @@ namespace NebulaChat.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("Description")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<bool>("IsArchived")
                         .HasColumnType("boolean");
@@ -52,9 +54,7 @@ namespace NebulaChat.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<int?>("MaxParticipants")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(100);
+                        .HasColumnType("integer");
 
                     b.Property<string>("Name")
                         .HasMaxLength(100)
@@ -70,23 +70,11 @@ namespace NebulaChat.Infrastructure.Migrations
 
                     b.HasIndex("CreatedBy");
 
-                    b.HasIndex("LastMessageAt")
-                        .IsDescending()
-                        .HasDatabaseName("IX_Chats_LastMessageAt");
-
-                    b.HasIndex("Name")
-                        .HasDatabaseName("IX_Chats_Name_Search");
-
-                    b.HasIndex("IsArchived", "LastMessageAt")
-                        .HasDatabaseName("IX_Chats_ActiveChats")
-                        .HasFilter("\"IsArchived\" = false");
+                    b.HasIndex("LastMessageAt");
 
                     b.HasIndex("Type", "CreatedBy");
 
-                    b.ToTable("Chats", t =>
-                        {
-                            t.HasCheckConstraint("CK_Chat_MaxParticipants", "\"MaxParticipants\" > 0 AND \"MaxParticipants\" <= 10000");
-                        });
+                    b.ToTable("Chats");
                 });
 
             modelBuilder.Entity("NebulaChat.Domain.Entities.ChatParticipant", b =>
@@ -140,28 +128,14 @@ namespace NebulaChat.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("JoinedAt");
+
                     b.HasIndex("LastReadMessageId");
 
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("IX_ChatParticipants_User");
-
-                    b.HasIndex("ChatId", "IsBanned")
-                        .HasDatabaseName("IX_ChatParticipants_Chat_Active")
-                        .HasFilter("\"IsBanned\" = false");
-
-                    b.HasIndex("ChatId", "JoinedAt")
-                        .HasDatabaseName("IX_ChatParticipants_Chat_Joined");
+                    b.HasIndex("UserId");
 
                     b.HasIndex("ChatId", "UserId")
-                        .IsUnique()
-                        .HasDatabaseName("IX_ChatParticipants_Unique");
-
-                    b.HasIndex("UserId", "NotificationsEnabled")
-                        .HasDatabaseName("IX_ChatParticipants_Notifications")
-                        .HasFilter("\"NotificationsEnabled\" = true");
-
-                    b.HasIndex("UserId", "LastReadMessageId", "ChatId")
-                        .HasDatabaseName("IX_ChatParticipants_UnreadMessages");
+                        .IsUnique();
 
                     b.ToTable("ChatParticipants");
                 });
@@ -180,8 +154,8 @@ namespace NebulaChat.Infrastructure.Migrations
 
                     b.Property<string>("Content")
                         .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -200,8 +174,7 @@ namespace NebulaChat.Infrastructure.Migrations
                         .HasColumnType("bigint");
 
                     b.Property<string>("FileUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasColumnType("text");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
@@ -224,29 +197,13 @@ namespace NebulaChat.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AuthorId")
-                        .HasDatabaseName("IX_Messages_Author");
+                    b.HasIndex("AuthorId");
 
-                    b.HasIndex("ReplyToMessageId")
-                        .HasDatabaseName("IX_Messages_ReplyTo")
-                        .HasFilter("\"ReplyToMessageId\" IS NOT NULL");
+                    b.HasIndex("ReplyToMessageId");
 
-                    b.HasIndex("ChatId", "CreatedAt")
-                        .IsDescending(false, true)
-                        .HasDatabaseName("IX_Messages_Chat_CreatedAt");
+                    b.HasIndex("ChatId", "CreatedAt");
 
-                    b.HasIndex("ChatId", "IsDeleted")
-                        .HasDatabaseName("IX_Messages_Chat_Deleted")
-                        .HasFilter("\"IsDeleted\" = true");
-
-                    b.HasIndex("ChatId", "IsEdited")
-                        .HasDatabaseName("IX_Messages_Chat_Edited")
-                        .HasFilter("\"IsEdited\" = true");
-
-                    b.ToTable("Messages", t =>
-                        {
-                            t.HasCheckConstraint("CK_Message_FileSize", "\"FileSize\" IS NULL OR \"FileSize\" <= 52428800");
-                        });
+                    b.ToTable("Messages");
                 });
 
             modelBuilder.Entity("NebulaChat.Domain.Entities.User", b =>
@@ -256,12 +213,10 @@ namespace NebulaChat.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("AppleId")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("text");
 
                     b.Property<string>("AvatarUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -282,12 +237,10 @@ namespace NebulaChat.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("GitHubId")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("text");
 
                     b.Property<string>("GoogleId")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("text");
 
                     b.Property<bool>("IsEmailVerified")
                         .HasColumnType("boolean");
@@ -316,16 +269,8 @@ namespace NebulaChat.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AppleId");
-
                     b.HasIndex("Email")
                         .IsUnique();
-
-                    b.HasIndex("GitHubId");
-
-                    b.HasIndex("GoogleId");
-
-                    b.HasIndex("LastLoginAt");
 
                     b.HasIndex("Username")
                         .IsUnique();

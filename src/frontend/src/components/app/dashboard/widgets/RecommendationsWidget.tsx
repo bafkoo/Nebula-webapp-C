@@ -221,6 +221,15 @@ export const RecommendationsWidget: React.FC<object> = () => {
               </div>
             </div>
           </div>
+          <div className="mt-2">
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={() => console.log('Подключиться к серверу:', server.name)}
+            >
+              Подключиться
+            </Button>
+          </div>
         </div>
       ))}
     </div>
@@ -254,12 +263,12 @@ export const RecommendationsWidget: React.FC<object> = () => {
                 <span className="text-muted-foreground">
                   {game.friendsCount} друзей играют
                 </span>
-                <Button 
-                  variant="default" 
-                  className="text-xs py-1 px-2 h-auto"
-                  onClick={() => console.log('Добавить игру:', game.name)}
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={() => console.log('Скачать игру:', game.name)}
                 >
-                  Добавить
+                  Скачать
                 </Button>
               </div>
             </div>
@@ -292,7 +301,7 @@ export const RecommendationsWidget: React.FC<object> = () => {
               <div className="flex items-center justify-between text-xs">
                 <span className="text-blue-400">{friend.reason}</span>
                 <Button 
-                  variant="default" 
+                  variant="primary" 
                   className="text-xs py-1 px-2 h-auto"
                   onClick={() => console.log('Добавить в друзья:', friend.name)}
                 >
@@ -402,20 +411,19 @@ export const RecommendationsWidget: React.FC<object> = () => {
 
       {/* Кнопки действий */}
       <div className="flex space-x-2 mt-4 pt-4 border-t border-border">
-        <Button 
-          variant="default" 
-          className="flex-1 text-xs py-2"
-          onClick={() => console.log('Обновить рекомендации')}
+        <Button
+          variant="primary"
+          className="w-full"
+          onClick={() => console.log('Больше рекомендаций')}
         >
-          <SparklesIcon size={14} className="mr-1" />
-          Обновить
+          Больше
         </Button>
-        <Button 
-          variant="default" 
-          className="flex-1 text-xs py-2"
-          onClick={() => console.log('Все рекомендации')}
+        <Button
+          variant="secondary"
+          className="w-full"
+          onClick={() => console.log('Настроить рекомендации')}
         >
-          Все
+          Настроить
         </Button>
       </div>
     </div>

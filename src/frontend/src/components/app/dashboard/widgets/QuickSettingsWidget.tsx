@@ -207,7 +207,7 @@ export const QuickSettingsWidget: React.FC<object> = () => {
               <span className="text-xs text-blue-400">({profile.game})</span>
             </div>
             <Button 
-              variant="default" 
+              variant="primary" 
               className="text-xs py-1 px-2 h-auto"
               onClick={() => console.log('Загрузить профиль:', profile.name)}
             >
@@ -486,19 +486,19 @@ export const QuickSettingsWidget: React.FC<object> = () => {
 
       {/* Кнопки действий */}
       <div className="flex space-x-2 mt-4 pt-4 border-t border-border">
-        <Button 
-          variant="default" 
-          className="flex-1 text-xs py-2"
+        <Button
+          variant="primary"
+          className="w-full"
+          onClick={() => console.log('Расширенные настройки')}
+        >
+          Расширенные
+        </Button>
+        <Button
+          variant="secondary"
+          className="w-full"
           onClick={() => console.log('Сбросить настройки')}
         >
           Сбросить
-        </Button>
-        <Button 
-          variant="default" 
-          className="flex-1 text-xs py-2"
-          onClick={() => console.log('Применить настройки')}
-        >
-          Применить
         </Button>
       </div>
     </div>
