@@ -1,30 +1,36 @@
 import React from 'react';
 
+interface TypingUser {
+  userId: string;
+  username: string;
+}
+
 interface TypingIndicatorProps {
-  typingUsers?: string[];
+  typingUsers: TypingUser[];
   className?: string;
 }
 
 const TypingIndicator: React.FC<TypingIndicatorProps> = ({ 
-  typingUsers = ['Алексей М.'], 
+  typingUsers = [], 
   className = "" 
 }) => {
   if (!typingUsers.length) {
-    return null;
+    return <div className={`h-6 ${className}`}></div>;
   }
 
   const formatTypingText = () => {
-    if (typingUsers.length === 1) {
-      return `${typingUsers[0]} печатает...`;
-    } else if (typingUsers.length === 2) {
-      return `${typingUsers[0]} и ${typingUsers[1]} печатают...`;
+    const names = typingUsers.map(u => u.username);
+    if (names.length === 1) {
+      return `${names[0]} печатает...`;
+    } else if (names.length === 2) {
+      return `${names[0]} и ${names[1]} печатают...`;
     } else {
-      return `${typingUsers[0]} и ещё ${typingUsers.length - 1} печатают...`;
+      return `${names.slice(0, 2).join(', ')} и ещё ${names.length - 2} печатают...`;
     }
   };
 
   return (
-    <div className={`flex items-center gap-2 text-muted-foreground ${className}`}>
+    <div className={`flex items-center gap-2 text-muted-foreground h-6 ${className}`}>
       {/* Typing animation dots */}
       <div className="flex gap-1">
         <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]"></div>

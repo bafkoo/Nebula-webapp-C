@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Card } from '../../ui/Card';
 import { Button } from '../../ui/Button';
-import { Plus, Search, Settings, Users, Loader2 } from 'lucide-react';
+import { Plus, Search, Settings, Loader2 } from 'lucide-react';
 import ChatMessageList from './ChatMessageList';
 import ChatInput from './ChatInput';
 import TypingIndicator from './TypingIndicator';
@@ -11,6 +11,7 @@ import { useAuth } from '../../../hooks/useAuth';
 import type { ChatDto, CreateChatRequest } from '../../../types/chat';
 import { apiClient } from '../../../lib/api';
 import { CreateChatModal } from './CreateChatModal';
+import { Avatar } from '../../ui/Avatar';
 
 interface FullChatInterfaceProps {
   className?: string;
@@ -22,14 +23,19 @@ const FullChatInterface: React.FC<FullChatInterfaceProps> = ({ className = "" })
   const [isChatsLoading, setIsChatsLoading] = useState(true);
   const [isCreatingChat, setIsCreatingChat] = useState(false);
   const [isCreateChatModalOpen, setIsCreateChatModalOpen] = useState(false);
-  const [isTyping] = useState(false); // TODO: implement typing indicator logic
   const [searchQuery, setSearchQuery] = useState('');
   
   const navigate = useNavigate();
   const { chatId: urlChatId } = useParams<{ chatId: string }>();
   const { user } = useAuth();
 
-  const { messages, sendMessage, isLoading: isLoadingMessages } = useChat(activeChatId);
+  const { 
+    messages, 
+    sendMessage, 
+    isLoading: isLoadingMessages,
+    typingUsers,
+    sendTypingNotification
+  } = useChat(activeChatId);
   
   // Синхронизация activeChatId с URL
   useEffect(() => {
@@ -142,13 +148,17 @@ const FullChatInterface: React.FC<FullChatInterfaceProps> = ({ className = "" })
     pathname: window.location.pathname
   });
 
-  const formatTime = (timeStr?: string) => timeStr || '';
+  const formatTime = (timeStr?: string) => {
+    if (!timeStr) return '';
+    const date = new Date(timeStr);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
 
   return (
     <div className={`h-full flex gap-4 ${className}`}>
       {/* Левая панель - Список чатов */}
       <Card className="w-80 flex flex-col bg-card border-border">
-        {/* Заголовок чатов */}
+        {/* Шапка с поиском */}
         <div className="p-4 border-b border-border">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-foreground">Чаты</h2>
@@ -161,8 +171,6 @@ const FullChatInterface: React.FC<FullChatInterfaceProps> = ({ className = "" })
               </Button>
             </div>
           </div>
-          
-          {/* Поиск */}
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
             <input
@@ -174,7 +182,7 @@ const FullChatInterface: React.FC<FullChatInterfaceProps> = ({ className = "" })
             />
           </div>
         </div>
-
+        
         {/* Список чатов */}
         <div className="flex-1 overflow-y-auto">
           {isChatsLoading ? (
@@ -191,46 +199,34 @@ const FullChatInterface: React.FC<FullChatInterfaceProps> = ({ className = "" })
               <button
                 key={chat.id}
                 onClick={() => handleChatSelect(chat.id)}
-                className={`w-full text-left p-4 hover:bg-muted transition-colors border-b border-border/50 ${
+                className={`w-full text-left p-4 hover:bg-muted transition-colors border-b border-border/50 flex items-center gap-3 ${
                   chat.id === activeChatId ? 'bg-muted' : ''
                 }`}
               >
-                <div className="flex items-start gap-3">
-                  {/* Аватар чата */}
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-sm ${
-                    chat.type === 'private' ? 'bg-green-500' : 'bg-blue-500'
-                  }`}>
-                    {chat.type === 'private' ? 
-                      chat.name.charAt(0).toUpperCase() : 
-                      <Users size={20} />
-                    }
+                <Avatar 
+                  size="md"
+                  src={chat.avatarUrl}
+                  username={chat.name}
+                  alt={`Аватар ${chat.name}`}
+                />
+                <div className="flex-1 overflow-hidden">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-semibold text-sm truncate text-foreground">{chat.name}</h3>
+                    {chat.lastMessage?.createdAt && (
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {formatTime(chat.lastMessage.createdAt)}
+                      </span>
+                    )}
                   </div>
-
-                  {/* Информация о чате */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-medium text-foreground truncate">
-                        {chat.name}
-                      </h3>
-                      <span className="text-xs text-muted-foreground">
-                        {formatTime(chat.lastMessageTime || '')}
-                      </span>
-                    </div>
-                    
-                    <p className="text-sm text-muted-foreground truncate mb-1">
-                      {chat.lastMessage || chat.description}
+                  <div className="flex justify-between items-center mt-1">
+                    <p className="text-xs text-muted-foreground truncate">
+                      {chat.lastMessage?.content ?? 'Нет сообщений'}
                     </p>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">
-                        {chat.type === 'group' && `${chat.participantsCount} участников`}
+                    {(chat.unreadCount ?? 0) > 0 && (
+                      <span className="bg-primary text-primary-foreground text-xs font-bold rounded-full px-2 py-0.5">
+                        {chat.unreadCount}
                       </span>
-                      {chat.unreadCount && chat.unreadCount > 0 && (
-                        <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full min-w-[20px] text-center">
-                          {chat.unreadCount}
-                        </span>
-                      )}
-                    </div>
+                    )}
                   </div>
                 </div>
               </button>
@@ -240,79 +236,36 @@ const FullChatInterface: React.FC<FullChatInterfaceProps> = ({ className = "" })
       </Card>
 
       {/* Правая панель - Активный чат */}
-      <Card className="flex-1 flex flex-col bg-card border-border">
-        {activeChatData ? (
-          <>
-            {/* Заголовок активного чата */}
-            <div className="p-4 border-b border-border">
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold ${
-                  activeChatData.type === 'private' ? 'bg-green-500' : 'bg-blue-500'
-                }`}>
-                  {activeChatData.type === 'private' ? 
-                    activeChatData.name.charAt(0).toUpperCase() : 
-                    <Users size={20} />
-                  }
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-foreground">
-                    {activeChatData.name}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {activeChatData.type === 'group' 
-                      ? `${activeChatData.participantsCount} участников${activeChatData.description ? ` • ${activeChatData.description}` : ''}`
-                      : 'В сети'
-                    }
-                  </p>
-                </div>
-                <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                  <Settings size={16} />
-                </Button>
-              </div>
-            </div>
-
-            {/* Область сообщений */}
-            <div className="flex-1 flex flex-col min-h-0 relative">
-              {isLoadingMessages && (
-                <div className="absolute inset-0 bg-card/50 flex items-center justify-center z-10">
-                  <Loader2 className="animate-spin text-primary" size={40} />
-                </div>
-              )}
+      <div className="flex-1 flex flex-col">
+        {activeChatId && activeChatData ? (
+          <div className="flex flex-col h-full bg-card rounded-lg border border-border">
+            {/* ... (Chat Header can be implemented here) */}
+            <div className="flex-1 flex flex-col overflow-hidden p-4">
               <ChatMessageList 
-                messages={messages}
-                isLoading={isLoadingMessages}
-                currentUserId={user?.id || ''}
+                messages={messages} 
+                isLoading={isLoadingMessages} 
+                currentUserId={user?.id ?? ''} 
                 className="flex-1"
               />
-              {isTyping && <TypingIndicator className="px-4 py-2" />}
+              <TypingIndicator typingUsers={typingUsers.filter(u => u.userId !== user?.id)} className="px-4 py-2" />
             </div>
-
-            {/* Поле ввода */}
             <ChatInput 
               onSendMessage={sendMessage}
-              disabled={isLoadingMessages || !activeChatId}
+              onTyping={sendTypingNotification}
+              disabled={!activeChatId || isLoadingMessages}
               className="border-t border-border"
             />
-          </>
+          </div>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-muted-foreground">
-            <div className="text-center">
-              {isChatsLoading ? (
-                <>
-                  <Loader2 className="animate-spin text-primary mb-4" size={32} />
-                  <h3 className="text-lg font-medium">Загрузка чатов...</h3>
-                </>
-              ) : (
-                <>
-                  <div className="text-4xl mb-4">💬</div>
-                  <h3 className="text-lg font-medium mb-2">Выберите чат</h3>
-                  <p className="text-sm">Выберите существующий чат или создайте новый</p>
-                </>
-              )}
-            </div>
+          <div className="flex items-center justify-center h-full bg-card rounded-lg border border-border text-muted-foreground">
+            {isChatsLoading ? (
+              <Loader2 className="animate-spin" size={32} />
+            ) : (
+              <span>Выберите чат, чтобы начать общение</span>
+            )}
           </div>
         )}
-      </Card>
+      </div>
 
       <CreateChatModal
         isOpen={isCreateChatModalOpen}

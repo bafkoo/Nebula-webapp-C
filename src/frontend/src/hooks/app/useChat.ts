@@ -4,12 +4,19 @@ import { apiClient } from '../../lib/api';
 import type { MessageDto } from '../../types/chat';
 import { useAuth } from '../useAuth';
 
+interface TypingUser {
+  userId: string;
+  username: string;
+}
+
 export const useChat = (chatId: string | null) => {
   const [messages, setMessages] = useState<MessageDto[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const { user } = useAuth();
 
   const onReceiveMessageRef = useRef<((message: MessageDto) => void) | null>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   onReceiveMessageRef.current = (message: MessageDto) => {
     if (message.chatId === chatId) {
@@ -59,10 +66,28 @@ export const useChat = (chatId: string | null) => {
       onReceiveMessageRef.current?.(message);
     };
 
+    const typingHandler = (data: { userId: string, username: string, chatId: string, isTyping: boolean }) => {
+      if (data.chatId === chatId) {
+        setTypingUsers(prev => {
+          const userExists = prev.some(u => u.userId === data.userId);
+          if (data.isTyping && !userExists) {
+            return [...prev, { userId: data.userId, username: data.username }];
+          }
+          if (!data.isTyping && userExists) {
+            return prev.filter(u => u.userId !== data.userId);
+          }
+          return prev;
+        });
+      }
+    };
+
     signalrService.on('ReceiveMessage', messageHandler);
+    signalrService.on('UserTyping', typingHandler);
 
     return () => {
       signalrService.off('ReceiveMessage', messageHandler);
+      signalrService.off('UserTyping', typingHandler);
+      setTypingUsers([]); // Очищаем при смене чата
     };
   }, [chatId]);
 
@@ -96,5 +121,29 @@ export const useChat = (chatId: string | null) => {
     }
   }, [chatId, user]);
 
-  return { messages, sendMessage, isLoading };
+  const sendTypingNotification = useCallback((isTyping: boolean) => {
+    if (!chatId) return;
+
+    // Отправляем "isTyping: false" без задержки
+    if (!isTyping) {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
+      signalrService.setTyping(chatId, false);
+      return;
+    }
+
+    // Отправляем "isTyping: true" с задержкой, чтобы не спамить
+    if (!typingTimeoutRef.current) {
+      signalrService.setTyping(chatId, true);
+      
+      typingTimeoutRef.current = setTimeout(() => {
+        signalrService.setTyping(chatId, false);
+        typingTimeoutRef.current = null;
+      }, 3000); // 3 секунды
+    }
+  }, [chatId]);
+
+  return { messages, sendMessage, isLoading, typingUsers, sendTypingNotification };
 }; 

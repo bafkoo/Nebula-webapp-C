@@ -162,7 +162,24 @@ namespace NebulaChat.API.Services
                 .AsSplitQuery() // Добавляем для оптимизации
                 .ToListAsync();
 
-            return _mapper.Map<List<ChatDto>>(chats);
+            var chatDtos = _mapper.Map<List<ChatDto>>(chats);
+
+            // Корректировка для приватных чатов
+            foreach (var dto in chatDtos)
+            {
+                if (dto.Type == ChatType.Private)
+                {
+                    var chat = chats.First(c => c.Id == dto.Id);
+                    var otherParticipant = chat.Participants.FirstOrDefault(p => p.UserId != userId);
+                    if (otherParticipant != null)
+                    {
+                        dto.Name = otherParticipant.User.Username;
+                        dto.AvatarUrl = otherParticipant.User.AvatarUrl;
+                    }
+                }
+            }
+
+            return chatDtos;
         }
 
         public async Task<List<Guid>> GetUserChatIdsAsync(Guid userId)

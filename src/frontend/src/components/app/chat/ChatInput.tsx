@@ -4,12 +4,14 @@ import { Button } from '../../ui/Button';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
+  onTyping: (isTyping: boolean) => void;
   disabled?: boolean;
   className?: string;
 }
 
 const ChatInput: React.FC<ChatInputProps> = ({ 
   onSendMessage, 
+  onTyping,
   disabled = false,
   className = "" 
 }) => {
@@ -20,6 +22,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     if (trimmedMessage && !disabled) {
       onSendMessage(trimmedMessage);
       setMessage('');
+      onTyping(false);
     }
   };
 
@@ -32,6 +35,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(e.target.value);
+    onTyping(e.target.value.length > 0);
   };
 
   return (

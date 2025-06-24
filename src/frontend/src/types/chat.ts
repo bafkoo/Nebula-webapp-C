@@ -22,6 +22,7 @@ export interface SendMessageRequest {
 }
 
 export interface ChatDto {
+  avatarUrl: string | undefined;
   id: string;
   name: string;
   description?: string;
@@ -31,7 +32,7 @@ export interface ChatDto {
   maxParticipants?: number;
   // Дополнительные поля для UI
   participantsCount?: number;
-  lastMessage?: string;
+  lastMessage?: MessageDto;
   lastMessageTime?: string;
   unreadCount?: number;
   isOnline?: boolean;

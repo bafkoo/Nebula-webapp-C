@@ -19,6 +19,11 @@ namespace NebulaChat.API.DTOs.Chat
         public string Username { get; set; } = null!;
 
         /// <summary>
+        /// URL аватара пользователя
+        /// </summary>
+        public string? AvatarUrl { get; set; }
+
+        /// <summary>
         /// Роль участника
         /// </summary>
         public ParticipantRole Role { get; set; }

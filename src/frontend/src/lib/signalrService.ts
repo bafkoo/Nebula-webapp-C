@@ -7,14 +7,15 @@ const HUB_URL = `${API_BASE_URL}/chatHub`;
 
 type HubMethodCallbacks = {
   ReceiveMessage: (message: MessageDto) => void;
+  UserTyping: (data: { userId: string, username: string, chatId: string, isTyping: boolean }) => void;
   // TODO: Добавить другие методы хаба по мере необходимости
-  // UserTyping: (chatId: string, userId: string, isTyping: boolean) => void;
   // MessageRead: (chatId: string, messageId: string) => void;
 };
 
 // Типы для методов, которые можно вызывать с клиента
 type HubInvokeMethods = {
   SendMessage: (chatId: string, content: string, tempId: string) => void;
+  SetTyping: (chatId: string, isTyping: boolean) => void;
   // TODO: Добавить другие методы по мере необходимости
   // SendTypingIndicator: (chatId: string, isTyping: boolean) => void;
 };
@@ -97,6 +98,10 @@ class SignalRService {
   // Конкретные методы для вызова
   public sendMessage = (chatId: string, content: string, tempId: string) => {
     return this.invoke("SendMessage", chatId, content, tempId);
+  }
+
+  public setTyping = (chatId: string, isTyping: boolean) => {
+    return this.invoke("SetTyping", chatId, isTyping);
   }
 }
 
