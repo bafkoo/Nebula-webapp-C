@@ -1,5 +1,6 @@
 import React from 'react';
-import { useAuth } from '../../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../hooks/useAuth';
 import { useAppStore } from '../../../stores/appStore';
 import { MenuIcon, SettingsIcon, NotificationIcon } from '../../icons';
 import { Button } from '../../ui/Button';
@@ -8,15 +9,31 @@ import type { ActiveTab } from '../../../types/app';
 
 interface HeaderProps {
   activeTab?: ActiveTab;
-  onTabChange?: (tab: ActiveTab) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
-  activeTab = 'dashboard',
-  onTabChange 
+  activeTab = 'dashboard'
 }) => {
   const { user } = useAuth();
   const { toggleSidebar } = useAppStore();
+  const navigate = useNavigate();
+
+  const handleTabChange = (tab: ActiveTab) => {
+    console.log('Header: handleTabChange called with tab:', tab);
+    console.log('Header: Current location:', window.location.pathname);
+    
+    if (tab === 'dashboard') {
+      console.log('Header: Navigating to dashboard');
+      navigate('/app');
+    } else if (tab === 'chat') {
+      console.log('Header: Navigating to chat');
+      // Переходим к чатам без конкретного chatId
+      // FullChatInterface автоматически выберет первый чат или покажет экран выбора
+      navigate('/app/chat');
+    }
+    
+    console.log('Header: Navigation command completed');
+  };
 
   const TabButton = ({ 
     tab, 
@@ -30,8 +47,11 @@ export const Header: React.FC<HeaderProps> = ({
     isActive: boolean;
   }) => (
     <Button
-      onClick={() => onTabChange?.(tab)}
-      variant={isActive ? "default" : "ghost"}
+      onClick={() => {
+        console.log('TabButton: Click detected for tab:', tab);
+        handleTabChange(tab);
+      }}
+      variant={isActive ? "primary" : "ghost"}
       size="sm"
       className={`flex items-center gap-2 ${isActive ? '' : 'text-muted-foreground'}`}
     >
@@ -50,22 +70,20 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
       
       {/* Центральная навигация Dashboard/Chat */}
-      {onTabChange && (
-        <div className="flex gap-2">
-          <TabButton
-            tab="dashboard"
-            icon={LayoutDashboard}
-            label="Dashboard"
-            isActive={activeTab === 'dashboard'}
-          />
-          <TabButton
-            tab="chat"
-            icon={MessageSquare}
-            label="Чаты"
-            isActive={activeTab === 'chat'}
-          />
-        </div>
-      )}
+      <div className="flex gap-2">
+        <TabButton
+          tab="dashboard"
+          icon={LayoutDashboard}
+          label="Dashboard"
+          isActive={activeTab === 'dashboard'}
+        />
+        <TabButton
+          tab="chat"
+          icon={MessageSquare}
+          label="Чаты"
+          isActive={activeTab === 'chat'}
+        />
+      </div>
       
       <div className="flex items-center gap-3">
         <button className="transition-colors">

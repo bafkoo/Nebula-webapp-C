@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useAvatar } from '../../../hooks/useAvatar';
-import { useAuth } from '../../../contexts/AuthContext';
+import { useAuth } from '../../../hooks/useAuth';
 import { Card } from '../../ui/Card';
 import { Button } from '../../ui/Button';
 import { Avatar } from '../../ui/Avatar';

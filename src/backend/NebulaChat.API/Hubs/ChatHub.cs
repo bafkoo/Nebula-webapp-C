@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using NebulaChat.API.DTOs.Chat;
 using NebulaChat.API.Services;
+using NebulaChat.API.Services.Interfaces;
 using System.Security.Claims;
 
 namespace NebulaChat.API.Hubs;
@@ -13,11 +15,15 @@ public class ChatHub : Hub
 {
     private readonly ILogger<ChatHub> _logger;
     private readonly IConnectionMapping _connectionMapping;
+    private readonly IMessageService _messageService;
+    private readonly IChatService _chatService;
 
-    public ChatHub(ILogger<ChatHub> logger, IConnectionMapping connectionMapping)
+    public ChatHub(ILogger<ChatHub> logger, IConnectionMapping connectionMapping, IMessageService messageService, IChatService chatService)
     {
         _logger = logger;
         _connectionMapping = connectionMapping;
+        _messageService = messageService;
+        _chatService = chatService;
     }
 
     /// <summary>
@@ -32,12 +38,12 @@ public class ChatHub : Hub
             
             // TODO: Проверить права пользователя на доступ к чату
             
-            await Groups.AddToGroupAsync(Context.ConnectionId, $"Chat_{chatId}");
+            await Groups.AddToGroupAsync(Context.ConnectionId, chatId);
             
             _logger.LogInformation("User {UserId} joined chat {ChatId}", userId, chatId);
             
             // Уведомить других участников о присоединении
-            await Clients.Group($"Chat_{chatId}")
+            await Clients.Group(chatId)
                 .SendAsync("UserJoined", new { UserId = userId, ChatId = chatId });
         }
         catch (Exception ex)
@@ -57,12 +63,12 @@ public class ChatHub : Hub
         {
             var userId = GetUserId();
             
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"Chat_{chatId}");
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, chatId);
             
             _logger.LogInformation("User {UserId} left chat {ChatId}", userId, chatId);
             
             // Уведомить других участников о выходе
-            await Clients.Group($"Chat_{chatId}")
+            await Clients.Group(chatId)
                 .SendAsync("UserLeft", new { UserId = userId, ChatId = chatId });
         }
         catch (Exception ex)
@@ -76,28 +82,30 @@ public class ChatHub : Hub
     /// </summary>
     /// <param name="chatId">ID чата</param>
     /// <param name="content">Содержимое сообщения</param>
-    public async Task SendMessage(string chatId, string content)
+    /// <param name="tempId">Временный ID с клиента для обратной связи</param>
+    public async Task SendMessage(string chatId, string content, string tempId)
     {
         try
         {
-            var userId = GetUserId();
+            var userId = Guid.Parse(GetUserId());
             
-            // TODO: Валидация сообщения и прав доступа
-            // TODO: Сохранение в базу данных через сервис
-            
-            // Отправить сообщение всем участникам чата
-            await Clients.Group($"Chat_{chatId}")
-                .SendAsync("ReceiveMessage", new 
-                { 
-                    Id = Guid.NewGuid(),
-                    ChatId = chatId,
-                    AuthorId = userId,
-                    Content = content,
-                    CreatedAt = DateTime.UtcNow,
-                    Type = "Text"
-                });
+            // Создаем запрос для сохранения сообщения
+            var request = new SendMessageRequest
+            {
+                Content = content,
+                Type = Domain.Entities.Enums.MessageType.Text
+            };
+
+            // Сохраняем сообщение в базу данных через MessageService
+            var savedMessage = await _messageService.SendMessageAsync(Guid.Parse(chatId), request, userId);
+
+            // Устанавливаем TempId для связи с клиентским сообщением
+            savedMessage.TempId = tempId;
+
+            // Отправить сохраненное сообщение всем участникам чата
+            await Clients.Group(chatId).SendAsync("ReceiveMessage", savedMessage);
                 
-            _logger.LogInformation("Message sent in chat {ChatId} by user {UserId}", chatId, userId);
+            _logger.LogInformation("Message sent and saved in chat {ChatId} by user {UserId}", chatId, userId);
         }
         catch (Exception ex)
         {
@@ -119,7 +127,7 @@ public class ChatHub : Hub
             var username = GetUsername();
             
             // Отправить индикатор печати только другим участникам
-            await Clients.GroupExcept($"Chat_{chatId}", Context.ConnectionId)
+            await Clients.GroupExcept(chatId, Context.ConnectionId)
                 .SendAsync("UserTyping", new 
                 { 
                     UserId = userId,
@@ -149,7 +157,7 @@ public class ChatHub : Hub
             // TODO: Обновить LastReadMessageId в базе данных
             
             // Уведомить других участников о прочтении
-            await Clients.GroupExcept($"Chat_{chatId}", Context.ConnectionId)
+            await Clients.GroupExcept(chatId, Context.ConnectionId)
                 .SendAsync("MessageRead", new 
                 { 
                     UserId = userId, 
@@ -173,19 +181,26 @@ public class ChatHub : Hub
     {
         try
         {
-            var userId = GetUserId();
+            var userId = Guid.Parse(GetUserId());
             
             // Добавить соединение в маппинг
-            _connectionMapping.Add(userId, Context.ConnectionId);
+            _connectionMapping.Add(userId.ToString(), Context.ConnectionId);
+            
+            // Автоматически присоединить к группам всех чатов пользователя
+            var userChatIds = await _chatService.GetUserChatIdsAsync(userId);
+            foreach (var chatId in userChatIds)
+            {
+                await Groups.AddToGroupAsync(Context.ConnectionId, chatId.ToString());
+            }
+            
+            _logger.LogInformation("User {UserId} connected and joined {ChatCount} chats", userId, userChatIds.Count);
             
             // Уведомить друзей о том, что пользователь онлайн
             await Clients.All.SendAsync("UserOnline", new 
             { 
-                UserId = userId, 
+                UserId = userId.ToString(), 
                 ConnectedAt = DateTime.UtcNow 
             });
-            
-            _logger.LogInformation("User {UserId} connected with connection {ConnectionId}", userId, Context.ConnectionId);
             
             await base.OnConnectedAsync();
         }

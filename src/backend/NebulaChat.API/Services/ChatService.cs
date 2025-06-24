@@ -92,13 +92,27 @@ namespace NebulaChat.API.Services
             await _context.SaveChangesAsync();
 
             // Добавление участников
-            foreach (var participantId in request.ParticipantIds)
+            if (request.ParticipantIds.Count == 0)
             {
+                request.ParticipantIds.Add(currentUserId);
+            }
+
+            var ownerId = currentUserId; // Явное определение владельца
+
+            foreach (var participantId in request.ParticipantIds.Distinct())
+            {
+                var userExists = await _context.Users.AnyAsync(u => u.Id == participantId);
+                if (!userExists)
+                {
+                    // Пропускаем несуществующих пользователей, можно добавить логирование
+                    continue;
+                }
+
                 var participant = new ChatParticipant
                 {
                     ChatId = chat.Id,
                     UserId = participantId,
-                    Role = participantId == currentUserId ? ParticipantRole.Owner : ParticipantRole.Member,
+                    Role = participantId == ownerId ? ParticipantRole.Owner : ParticipantRole.Member,
                     JoinedAt = DateTime.UtcNow
                 };
                 _context.ChatParticipants.Add(participant);
@@ -127,10 +141,36 @@ namespace NebulaChat.API.Services
             return Task.FromResult<ChatDto?>(null);
         }
 
-        public Task<List<ChatDto>> GetUserChatsAsync(Guid userId, ChatType? chatType = null, int page = 1, int pageSize = 50)
+        public async Task<List<ChatDto>> GetUserChatsAsync(Guid userId, ChatType? chatType = null, int page = 1, int pageSize = 50)
         {
-            // TODO: Implement logic
-            return Task.FromResult(new List<ChatDto>());
+            var query = _context.Chats
+                .Where(c => c.Participants.Any(p => p.UserId == userId))
+                .Include(c => c.Participants)
+                    .ThenInclude(p => p.User)
+                .Include(c => c.Messages.OrderByDescending(m => m.CreatedAt).Take(1))
+                .AsQueryable();
+
+            if (chatType.HasValue)
+            {
+                query = query.Where(c => c.Type == chatType.Value);
+            }
+            
+            var chats = await query
+                .OrderByDescending(c => c.Messages.Any() ? c.Messages.Max(m => m.CreatedAt) : c.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .AsSplitQuery() // Добавляем для оптимизации
+                .ToListAsync();
+
+            return _mapper.Map<List<ChatDto>>(chats);
+        }
+
+        public async Task<List<Guid>> GetUserChatIdsAsync(Guid userId)
+        {
+            return await _context.ChatParticipants
+                .Where(p => p.UserId == userId)
+                .Select(p => p.ChatId)
+                .ToListAsync();
         }
 
         public async Task<bool> HasAccessToChatAsync(Guid chatId, Guid userId)

@@ -27,6 +27,13 @@ public interface IChatService
     Task<List<ChatDto>> GetUserChatsAsync(Guid userId, ChatType? chatType = null, int page = 1, int pageSize = 50);
     
     /// <summary>
+    /// Получение списка ID чатов пользователя (для SignalR групп)
+    /// </summary>
+    /// <param name="userId">ID пользователя</param>
+    /// <returns>Список ID чатов</returns>
+    Task<List<Guid>> GetUserChatIdsAsync(Guid userId);
+    
+    /// <summary>
     /// Получение деталей чата
     /// </summary>
     /// <param name="chatId">ID чата</param>

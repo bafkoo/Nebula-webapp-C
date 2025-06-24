@@ -15,7 +15,9 @@ namespace NebulaChat.API.Mapping
             
             // Маппинг для Message -> MessageDto нужен, чтобы правильно смапить LastMessage
             CreateMap<Message, MessageDto>()
-                .ForMember(dest => dest.AuthorUsername, opt => opt.MapFrom(src => src.Author.Username));
+                .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.AuthorId))
+                .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.Author.Username))
+                .ForMember(dest => dest.AvatarUrl, opt => opt.MapFrom(src => src.Author.AvatarUrl));
 
             CreateMap<ChatInvite, ChatInviteDto>();
 

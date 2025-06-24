@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useParams } from 'react-router-dom';
 import { Sidebar } from '../../components/app/sidebar/Sidebar';
 import { Header } from '../../components/app/layout/Header';
 import { GamingLobbiesWidget } from '../../components/app/dashboard/widgets/GamingLobbiesWidget';
@@ -11,7 +12,18 @@ import FullChatInterface from '../../components/app/chat/FullChatInterface';
 import type { ActiveTab } from '../../types/app';
 
 export const MainPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
+  const { chatId } = useParams<{ chatId: string }>();
+  
+  // Определяем активную вкладку на основе URL
+  const isOnChatPage = window.location.pathname.startsWith('/app/chat');
+  const activeTab: ActiveTab = isOnChatPage ? 'chat' : 'dashboard';
+  
+  console.log('MainPage: URL analysis:', {
+    pathname: window.location.pathname,
+    chatId,
+    isOnChatPage,
+    activeTab
+  });
 
   return (
     <div className="min-h-screen bg-background text-foreground flex">
@@ -22,7 +34,6 @@ export const MainPage: React.FC = () => {
       <div className="flex-1 flex flex-col">
         <Header 
           activeTab={activeTab}
-          onTabChange={setActiveTab}
         />
         
         {/* Content */}

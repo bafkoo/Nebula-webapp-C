@@ -1,20 +1,13 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { User, AuthState, AuthContextType } from './types';
 import { apiClient, TokenManager } from '../lib/api';
 import { useNavigate, useLocation } from 'react-router-dom';
+import signalrService from '../lib/signalrService';
 
 // Контекст
-const AuthContext = createContext<AuthContextType | null>(null);
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === null) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+export const AuthContext = createContext<AuthContextType | null>(null);
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -30,6 +23,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading: true,
     pendingVerificationEmail: null
   });
+
+  // Управление SignalR соединением
+  useEffect(() => {
+    if (authState.isAuthenticated && authState.user?.isEmailVerified) {
+      console.log("🚀 AuthProvider: User authenticated and verified, starting SignalR...");
+      signalrService.startConnection();
+    }
+
+    return () => {
+      if (authState.isAuthenticated) {
+        console.log("🚀 AuthProvider: Cleaning up, stopping SignalR connection...");
+        signalrService.stopConnection();
+      }
+    };
+  }, [authState.isAuthenticated, authState.user?.isEmailVerified]);
 
   // Проверяем JWT токен при загрузке
   useEffect(() => {
@@ -206,15 +214,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
-    // Используем метод API клиента который очищает TokenManager
-    apiClient.logout();
+    console.log('🚀 Выход из системы');
     
+    // Сначала останавливаем соединение
+    signalrService.stopConnection();
+
+    TokenManager.removeToken();
     setAuthState({
       user: null,
       isAuthenticated: false,
       isLoading: false,
       pendingVerificationEmail: null
     });
+    // Перенаправляем на главную страницу
+    navigate('/', { replace: true });
   };
 
   const googleAuth = async (idToken: string) => {

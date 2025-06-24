@@ -1,3 +1,5 @@
+import type { MessageDto, CreateChatRequest, ChatDto } from '../types/chat';
+
 // API типы
 export interface RegisterRequest {
   username: string;
@@ -94,7 +96,7 @@ export class TokenManager {
 }
 
 // API клиент
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'http://localhost:5001';
 
 class ApiClient {
   private baseUrl: string;
@@ -243,8 +245,34 @@ class ApiClient {
 
   // Метод для получения профиля (будет полезен для защищенных эндпоинтов)
   async getProfile(): Promise<UserDto> {
-    return this.request<UserDto>('/user/profile');
+    return this.request<UserDto>('/users/profile');
+  }
+
+  // --- Chat API ---
+
+  async getChats(): Promise<ChatDto[]> {
+    return this.request<ChatDto[]>('/api/chat');
+  }
+
+  async createChat(data: CreateChatRequest): Promise<ChatDto> {
+    return this.request<ChatDto>(`/api/chat`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getMessages(chatId: string, page: number = 1, pageSize: number = 50): Promise<MessageDto[]> {
+    return this.request<MessageDto[]>(`/api/chats/${chatId}/messages?page=${page}&pageSize=${pageSize}`);
+  }
+
+  async uploadAvatar(): Promise<{ filePath: string }> {
+    // Для FormData нам не нужен заголовок 'Content-Type': 'application/json'
+    // ... existing code ...
   }
 }
 
-export const apiClient = new ApiClient(API_BASE_URL); 
+const apiClient = new ApiClient(API_BASE_URL);
+
+// `TokenManager` уже экспортируется через `export class`
+export { apiClient };
+export default apiClient;

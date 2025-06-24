@@ -1,87 +1,63 @@
 import React from 'react';
+import { format } from 'date-fns';
+import { ru } from 'date-fns/locale';
+import { Check, Clock, AlertCircle } from 'lucide-react';
+import { cn } from '../../../lib/utils';
+import type { MessageDto } from '../../../types/chat';
 import { Avatar } from '../../ui/Avatar';
 
-interface Message {
-  id: string;
-  userId: string;
-  userName: string;
-  content: string;
-  createdAt: string;
-  type: 'text' | 'system';
-  isOwnMessage?: boolean;
-}
-
 interface ChatMessageItemProps {
-  message: Message;
-  className?: string;
+  message: MessageDto;
+  isCurrentUser: boolean;
+  showAvatar: boolean;
 }
 
-const ChatMessageItem: React.FC<ChatMessageItemProps> = ({ 
-  message, 
-  className = "" 
-}) => {
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('ru-RU', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
+const ChatMessageItem: React.FC<ChatMessageItemProps> = ({ message, isCurrentUser, showAvatar }) => {
+
+  const renderMessageStatus = () => {
+    if (message.hasError) {
+      return <AlertCircle className="h-4 w-4 text-red-500" aria-label="Ошибка отправки" />;
+    }
+    if (message.isSending) {
+      return <Clock className="h-4 w-4 text-muted-foreground animate-spin" aria-label="Отправка..." />;
+    }
+    // TODO: Implement read status
+    // if (message.isRead) {
+    //   return <CheckCheck className="h-4 w-4 text-blue-500" />;
+    // }
+    return <Check className="h-4 w-4 text-muted-foreground" />;
   };
 
-  // System message
-  if (message.type === 'system') {
-    return (
-      <div className={`flex justify-center ${className}`}>
-        <div className="flex items-center gap-2 px-3 py-1 bg-muted rounded-full">
-          <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full"></div>
-          <span className="text-xs text-muted-foreground">{message.content}</span>
-          <span className="text-xs text-muted-foreground/70">{formatTime(message.createdAt)}</span>
-        </div>
-      </div>
-    );
-  }
-
-  // Own message (right-aligned)
-  if (message.isOwnMessage) {
-    return (
-      <div className={`flex justify-end ${className}`}>
-        <div className="flex items-start gap-2 max-w-[85%]">
-          <div className="flex flex-col items-end">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs text-muted-foreground">{formatTime(message.createdAt)}</span>
-              <span className="text-xs font-medium text-foreground">{message.userName}</span>
-            </div>
-            <div className="bg-primary text-primary-foreground px-3 py-2 rounded-lg rounded-tr-sm">
-              <p className="text-sm leading-relaxed">{message.content}</p>
-            </div>
-          </div>
-          <Avatar 
-            username={message.userName}
-            size="sm" 
-            className="mt-6"
-          />
-        </div>
-      </div>
-    );
-  }
-
-  // Other user's message (left-aligned)
   return (
-    <div className={`flex justify-start ${className}`}>
-      <div className="flex items-start gap-2 max-w-[85%]">
-        <Avatar 
-          username={message.userName}
-          size="sm" 
-          className="mt-6"
-        />
-        <div className="flex flex-col">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-medium text-foreground">{message.userName}</span>
-            <span className="text-xs text-muted-foreground">{formatTime(message.createdAt)}</span>
-          </div>
-          <div className="bg-muted text-foreground px-3 py-2 rounded-lg rounded-tl-sm">
-            <p className="text-sm leading-relaxed">{message.content}</p>
-          </div>
+    <div className={cn("flex items-end gap-2", isCurrentUser ? "justify-end" : "justify-start")}>
+      {!isCurrentUser && (
+        <div className="w-8">
+          {showAvatar && (
+            <Avatar 
+              size="sm"
+              src={message.avatarUrl} 
+              username={message.userName}
+              alt={`Аватар ${message.userName}`}
+            />
+          )}
+        </div>
+      )}
+
+      <div
+        className={cn(
+          "max-w-xs md:max-w-md lg:max-w-lg rounded-lg px-3 py-2 text-sm",
+          isCurrentUser
+            ? "bg-primary text-primary-foreground rounded-br-none"
+            : "bg-muted text-foreground rounded-bl-none"
+        )}
+      >
+        {!isCurrentUser && showAvatar && (
+          <p className="font-semibold text-xs mb-1">{message.userName}</p>
+        )}
+        <p className="whitespace-pre-wrap">{message.content}</p>
+        <div className="flex items-center gap-2 mt-1 text-xs text-right opacity-70">
+          <span>{format(new Date(message.createdAt), 'HH:mm', { locale: ru })}</span>
+          {isCurrentUser && renderMessageStatus()}
         </div>
       </div>
     </div>

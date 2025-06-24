@@ -12,11 +12,12 @@ using FluentValidation.AspNetCore;
 using System.Reflection;
 using AutoMapper;
 using NebulaChat.API.Services.Interfaces;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure Kestrel to listen on specific URLs
-builder.WebHost.UseUrls("http://localhost:5000");
+builder.WebHost.UseUrls("http://localhost:5001");
 
 // Debug: Check connection string
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -24,7 +25,12 @@ Console.WriteLine($"🔍 Connection String: {connectionString}");
 Console.WriteLine($"🔍 Environment: {builder.Environment.EnvironmentName}");
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options => 
+    {
+        // Добавляем конвертер для enum в строки
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 
 // Add FluentValidation services using the new recommended way
 builder.Services.AddFluentValidationAutoValidation();
@@ -112,10 +118,14 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy
-            .WithOrigins("http://localhost:5173") // Vite dev server
+            .WithOrigins(
+                "http://localhost:5173", // Vite default port
+                "http://localhost:5174", // Vite alternative port  
+                "http://localhost:3000"  // Just in case
+            )
             .AllowAnyMethod()
             .AllowAnyHeader()
-            .AllowCredentials();
+            .AllowCredentials(); // Нужно для SignalR с JWT
     });
 });
 
@@ -140,8 +150,8 @@ app.MapHub<ChatHub>("/chatHub");
 
 // Add startup logging
 Console.WriteLine("🚀 Starting NebulaChat API server...");
-Console.WriteLine($"🌐 Server will be available at: http://localhost:5000");
-Console.WriteLine($"💬 SignalR Chat Hub available at: ws://localhost:5000/chatHub");
+Console.WriteLine($"🌐 Server will be available at: http://localhost:5001");
+Console.WriteLine($"💬 SignalR Chat Hub available at: ws://localhost:5001/chatHub");
 Console.WriteLine($"🔧 Environment: {app.Environment.EnvironmentName}");
 
 app.Run();

@@ -7,7 +7,7 @@ import logoImage from '../../assets/auth/login/logos/logo (2).png';
 import authCodeBackground from '../../assets/auth/verification/backgrounds/authCodeBackground.png';
 
 // Auth Context
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 
 interface FormErrors {
   code?: string;

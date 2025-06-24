@@ -56,9 +56,27 @@ function App() {
               } 
             />
             
-            {/* Protected Main App Route */}
+            {/* Protected Main App Routes */}
             <Route 
               path="/app" 
+              element={
+                <ProtectedRoute requireAuth={true}>
+                  <MainPage />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/app/chat" 
+              element={
+                <ProtectedRoute requireAuth={true}>
+                  <MainPage />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/app/chat/:chatId" 
               element={
                 <ProtectedRoute requireAuth={true}>
                   <MainPage />

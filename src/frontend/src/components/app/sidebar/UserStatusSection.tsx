@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useAuth } from '../../../contexts/AuthContext';
+import { useAuth } from '../../../hooks/useAuth';
 import { Avatar } from '../../ui/Avatar';
 import { AvatarUploadModal } from '../common/AvatarUploadModal';
 import { SettingsIcon, OnlineStatusIcon, AwayStatusIcon, BusyStatusIcon, OfflineStatusIcon } from '../../icons';
