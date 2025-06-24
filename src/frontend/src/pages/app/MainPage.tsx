@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Sidebar } from '../../components/app/sidebar/Sidebar';
 import { Header } from '../../components/app/layout/Header';
 import { GamingLobbiesWidget } from '../../components/app/dashboard/widgets/GamingLobbiesWidget';
@@ -7,8 +7,12 @@ import { NewsUpdatesWidget } from '../../components/app/dashboard/widgets/NewsUp
 import { RecommendationsWidget } from '../../components/app/dashboard/widgets/RecommendationsWidget';
 import { QuickSettingsWidget } from '../../components/app/dashboard/widgets/QuickSettingsWidget';
 import { EventsTournamentsWidget } from '../../components/app/dashboard/widgets/EventsTournamentsWidget';
+import FullChatInterface from '../../components/app/chat/FullChatInterface';
+import type { ActiveTab } from '../../types/app';
 
 export const MainPage: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
+
   return (
     <div className="min-h-screen bg-background text-foreground flex">
       {/* Sidebar */}
@@ -16,21 +20,27 @@ export const MainPage: React.FC = () => {
       
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col">
-        <Header />
+        <Header 
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
         
-        {/* Dashboard Widgets Grid */}
+        {/* Content */}
         <div className="flex-1 p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {/* Первый ряд */}
-            <GamingLobbiesWidget />
-            <StatsAchievementsWidget />
-            <NewsUpdatesWidget />
-            
-            {/* Второй ряд */}
-            <RecommendationsWidget />
-            <QuickSettingsWidget />
-            <EventsTournamentsWidget />
-          </div>
+          {activeTab === 'dashboard' ? (
+            /* Dashboard View */
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              <GamingLobbiesWidget />
+              <StatsAchievementsWidget />
+              <NewsUpdatesWidget />
+              <RecommendationsWidget />
+              <QuickSettingsWidget />
+              <EventsTournamentsWidget />
+            </div>
+          ) : (
+            /* Chat View */
+            <FullChatInterface className="h-full" />
+          )}
         </div>
       </div>
     </div>

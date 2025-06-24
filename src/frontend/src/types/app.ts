@@ -33,4 +33,7 @@ export interface QuickAction {
   icon: string;
   action: () => void;
   disabled?: boolean;
-} 
+}
+
+// Навигация приложения
+export type ActiveTab = 'dashboard' | 'chat'; 
