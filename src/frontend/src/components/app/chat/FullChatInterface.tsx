@@ -6,6 +6,7 @@ import { Plus, Search, Settings, Loader2, Moon, Sun } from 'lucide-react';
 import ChatMessageList from './ChatMessageList';
 import ChatInput from './ChatInput';
 import TypingIndicator from './TypingIndicator';
+import { SearchMessages } from './SearchMessages';
 import { useChat } from '../../../hooks/app/useChat';
 import { useAuth } from '../../../hooks/useAuth';
 import type { ChatDto, CreateChatRequest } from '../../../types/chat';
@@ -33,6 +34,7 @@ const FullChatInterface: React.FC<FullChatInterfaceProps> = ({ className = "" })
   const [isCreateChatModalOpen, setIsCreateChatModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isDarkTheme, setIsDarkTheme] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const [userStatuses] = useState(() => {
     // Создаем случайные статусы для демонстрации
     const statuses: Record<string, string> = {};
@@ -151,6 +153,20 @@ const FullChatInterface: React.FC<FullChatInterfaceProps> = ({ className = "" })
     } finally {
       setIsCreatingChat(false);
     }
+  };
+
+  const handleSearchOpen = () => {
+    setShowSearch(true);
+  };
+
+  const handleSearchClose = () => {
+    setShowSearch(false);
+  };
+
+  const handleMessageSelect = (messageId: string) => {
+    // TODO: Скроллим к найденному сообщению
+    console.log('Scroll to message:', messageId);
+    setShowSearch(false);
   };
 
   const activeChatData = chats.find(chat => chat.id === activeChatId);
@@ -287,11 +303,17 @@ const FullChatInterface: React.FC<FullChatInterfaceProps> = ({ className = "" })
                 <div className="flex-1">
                   <h2 className="font-semibold text-foreground">{activeChatData.name}</h2>
                   <p className="text-sm text-muted-foreground">
-                    {activeChatData.participantCount ?? 1} участников
+                    {activeChatData.participantsCount ?? 1} участников
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-primary/20 hover:scale-110 transition-all duration-200">
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="h-8 w-8 p-0 hover:bg-primary/20 hover:scale-110 transition-all duration-200"
+                    onClick={handleSearchOpen}
+                    title="Поиск сообщений"
+                  >
                     <Search size={16} />
                   </Button>
                   <Button 
@@ -354,6 +376,20 @@ const FullChatInterface: React.FC<FullChatInterfaceProps> = ({ className = "" })
         onCreateChat={handleCreateChat}
         isLoading={isCreatingChat}
       />
+      
+      {/* Search Modal */}
+      {showSearch && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-2xl max-h-[80vh]">
+            <SearchMessages
+              chatId={activeChatId || undefined}
+              onMessageSelect={handleMessageSelect}
+              onClose={handleSearchClose}
+              className="w-full"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

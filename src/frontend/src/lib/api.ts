@@ -1,4 +1,5 @@
 import type { MessageDto, CreateChatRequest, ChatDto } from '../types/chat';
+import type { MessageType } from '../types/chat';
 
 // API типы
 export interface RegisterRequest {
@@ -51,6 +52,49 @@ export interface AuthResponse {
 export interface ApiResponse {
   success: boolean;
   message: string;
+}
+
+// --- Search Types ---
+
+export interface SearchMessagesRequest {
+  query: string;
+  chatId?: string;
+  authorId?: string;
+  messageType?: MessageType;
+  startDate?: string;
+  endDate?: string;
+  page: number;
+  pageSize: number;
+}
+
+export interface SearchMessagesResponse {
+  messages: SearchMessageResultDto[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface SearchMessageResultDto {
+  id: string;
+  chatId: string;
+  userId: string;
+  userName: string;
+  avatarUrl?: string;
+  content: string;
+  type: MessageType;
+  fileUrl?: string;
+  fileName?: string;
+  fileSize?: number;
+  mimeType?: string;
+  createdAt: string;
+  chatName: string;
+  highlightedContent: HighlightFragment[];
+}
+
+export interface HighlightFragment {
+  text: string;
+  isHighlighted: boolean;
 }
 
 // Утилиты для работы с токенами
@@ -311,6 +355,38 @@ class ApiClient {
     url: string;
   }> {
     return this.request(`/files/info/${fileName}`);
+  }
+
+  // --- Search API ---
+
+  async searchMessages(request: SearchMessagesRequest): Promise<SearchMessagesResponse> {
+    return this.request<SearchMessagesResponse>('/search/messages', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  async searchInChat(chatId: string, query: string, page: number = 1, pageSize: number = 20): Promise<SearchMessagesResponse> {
+    const params = new URLSearchParams({
+      query,
+      page: page.toString(),
+      pageSize: pageSize.toString(),
+    });
+
+    return this.request<SearchMessagesResponse>(`/search/chats/${chatId}/messages?${params}`);
+  }
+
+  async quickSearch(query: string, chatId?: string, limit: number = 5): Promise<SearchMessageResultDto[]> {
+    const params = new URLSearchParams({
+      q: query,
+      limit: limit.toString(),
+    });
+
+    if (chatId) {
+      params.append('chatId', chatId);
+    }
+
+    return this.request<SearchMessageResultDto[]>(`/search/quick?${params}`);
   }
 }
 

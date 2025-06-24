@@ -12,5 +12,9 @@ namespace NebulaChat.API.Services.Interfaces
         Task DeleteMessageAsync(Guid messageId, Guid userId);
         Task PinMessageAsync(Guid chatId, Guid messageId, Guid userId);
         Task MarkAsReadAsync(Guid chatId, Guid messageId, Guid userId);
+        
+        // Search methods
+        Task<SearchMessagesResponse> SearchMessagesAsync(SearchMessagesRequest request, Guid userId);
+        Task<SearchMessagesResponse> SearchInChatAsync(Guid chatId, string query, Guid userId, int page = 1, int pageSize = 20);
     }
 } 

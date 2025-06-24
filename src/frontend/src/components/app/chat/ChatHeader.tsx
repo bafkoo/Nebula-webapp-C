@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
+import { ChevronDownIcon, ChevronUpIcon, Search } from 'lucide-react';
 import { ChatSearchIcon } from '../../icons/Icons';
 import type { ChatDto } from '../../../types/chat';
 
@@ -8,6 +8,7 @@ interface ChatHeaderProps {
   onToggleExpand: () => void;
   activeChat: string | null;
   onChatChange: (chatId: string) => void;
+  onSearchClick?: () => void;
   className?: string;
 }
 
@@ -16,13 +17,14 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   onToggleExpand,
   activeChat,
   onChatChange,
+  onSearchClick,
   className = ""
 }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [chats] = useState<ChatDto[]>([
-    { id: '1', name: 'Общий чат', type: 'group', createdBy: 'user1', createdAt: '2024-01-01', description: 'Основной чат команды' },
-    { id: '2', name: 'Алексей М.', type: 'private', createdBy: 'user2', createdAt: '2024-01-02' },
-    { id: '3', name: 'Проект Alpha', type: 'group', createdBy: 'user1', createdAt: '2024-01-03', description: 'Обсуждение проекта Alpha' },
+    { id: '1', name: 'Общий чат', type: 'group', createdBy: 'user1', createdAt: '2024-01-01', description: 'Основной чат команды', avatarUrl: undefined },
+    { id: '2', name: 'Алексей М.', type: 'private', createdBy: 'user2', createdAt: '2024-01-02', avatarUrl: undefined },
+    { id: '3', name: 'Проект Alpha', type: 'group', createdBy: 'user1', createdAt: '2024-01-03', description: 'Обсуждение проекта Alpha', avatarUrl: undefined },
   ]);
 
   const activeChatData = chats.find(chat => chat.id === activeChat);
@@ -87,6 +89,17 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
             </div>
           )}
         </div>
+
+        {/* Search Button */}
+        {onSearchClick && (
+          <button
+            onClick={onSearchClick}
+            className="ml-2 p-1 hover:bg-muted rounded transition-colors"
+            title="Поиск сообщений"
+          >
+            <Search size={16} className="text-muted-foreground" />
+          </button>
+        )}
 
         {/* Expand/Collapse Button */}
         <button

@@ -106,6 +106,7 @@ export const useChat = (chatId: string | null) => {
       content: content,
       createdAt: new Date().toISOString(),
       isSending: true,
+      type: 'Text',
     };
 
     setMessages((prevMessages) => [...prevMessages, optimisticMessage]);

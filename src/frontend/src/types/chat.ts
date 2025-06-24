@@ -31,7 +31,6 @@ export interface SendMessageRequest {
 }
 
 export interface ChatDto {
-  [x: string]: number;
   avatarUrl: string | undefined;
   id: string;
   name: string;

@@ -251,7 +251,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               </Button>
               <Button
                 onClick={handleCancel}
-                variant="outline"
+                variant="secondary"
                 className="flex-1"
               >
                 Отмена
