@@ -43,6 +43,31 @@ public class MessageDto
     public string Content { get; set; } = string.Empty;
     
     /// <summary>
+    /// Тип сообщения
+    /// </summary>
+    public MessageType Type { get; set; } = MessageType.Text;
+    
+    /// <summary>
+    /// URL файла (для сообщений типа Image, File, Voice, Video)
+    /// </summary>
+    public string? FileUrl { get; set; }
+    
+    /// <summary>
+    /// Название файла
+    /// </summary>
+    public string? FileName { get; set; }
+    
+    /// <summary>
+    /// Размер файла в байтах
+    /// </summary>
+    public long? FileSize { get; set; }
+    
+    /// <summary>
+    /// MIME тип файла
+    /// </summary>
+    public string? MimeType { get; set; }
+    
+    /// <summary>
     /// Дата создания
     /// </summary>
     public DateTime CreatedAt { get; set; }

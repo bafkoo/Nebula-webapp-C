@@ -1,4 +1,4 @@
-export type MessageType = 'Text' | 'Image' | 'File' | 'System';
+export type MessageType = 'Text' | 'Image' | 'File' | 'System' | 'Voice' | 'Video';
 
 export interface MessageDto {
   id: string;
@@ -7,6 +7,11 @@ export interface MessageDto {
   userName: string;
   avatarUrl?: string;
   content: string;
+  type: MessageType;
+  fileUrl?: string;
+  fileName?: string;
+  fileSize?: number;
+  mimeType?: string;
   createdAt: string;
   updatedAt?: string;
   // Поля для оптимистичного UI
@@ -18,10 +23,15 @@ export interface MessageDto {
 export interface SendMessageRequest {
   chatId: string;
   content: string;
-  type: 'Text' | 'Image'; // Пока только текст и изображения
+  type: MessageType;
+  fileUrl?: string;
+  fileName?: string;
+  fileSize?: number;
+  mimeType?: string;
 }
 
 export interface ChatDto {
+  [x: string]: number;
   avatarUrl: string | undefined;
   id: string;
   name: string;

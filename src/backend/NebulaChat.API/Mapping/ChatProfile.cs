@@ -13,11 +13,16 @@ namespace NebulaChat.API.Mapping
                 .ForMember(dest => dest.CreatorUsername, opt => opt.MapFrom(src => src.Creator.Username))
                 .ForMember(dest => dest.MaxParticipants, opt => opt.MapFrom(src => src.MaxParticipants));
             
-            // Маппинг для Message -> MessageDto нужен, чтобы правильно смапить LastMessage
+            // Маппинг для Message -> MessageDto с поддержкой файлов
             CreateMap<Message, MessageDto>()
                 .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.AuthorId))
                 .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.Author.Username))
-                .ForMember(dest => dest.AvatarUrl, opt => opt.MapFrom(src => src.Author.AvatarUrl));
+                .ForMember(dest => dest.AvatarUrl, opt => opt.MapFrom(src => src.Author.AvatarUrl))
+                .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type))
+                .ForMember(dest => dest.FileUrl, opt => opt.MapFrom(src => src.FileUrl))
+                .ForMember(dest => dest.FileName, opt => opt.MapFrom(src => src.FileName))
+                .ForMember(dest => dest.FileSize, opt => opt.MapFrom(src => src.FileSize))
+                .ForMember(dest => dest.MimeType, opt => opt.MapFrom(src => src.MimeType));
 
             CreateMap<ChatInvite, ChatInviteDto>();
 

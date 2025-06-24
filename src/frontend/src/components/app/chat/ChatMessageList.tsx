@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import ChatMessageItem from './ChatMessageItem';
 import type { MessageDto } from '../../../types/chat';
 import { Loader2 } from 'lucide-react';
@@ -12,6 +12,8 @@ interface ChatMessageListProps {
 
 const ChatMessageList: React.FC<ChatMessageListProps> = ({ messages, currentUserId, isLoading, className = "" }) => {
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
+  const [previousMessageCount, setPreviousMessageCount] = useState(messages.length);
+  const [newMessageIds, setNewMessageIds] = useState<Set<string>>(new Set());
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -20,6 +22,28 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({ messages, currentUser
   React.useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Отслеживание новых сообщений для анимации
+  useEffect(() => {
+    if (messages.length > previousMessageCount) {
+      // Найти новые сообщения
+      const newMessages = messages.slice(previousMessageCount);
+      const newIds = new Set(newMessages.map(msg => msg.id || `temp-${msg.createdAt}`));
+      
+      setNewMessageIds(newIds);
+      
+      // Убрать флаг "новое" через 1 секунду
+      const timer = setTimeout(() => {
+        setNewMessageIds(new Set());
+      }, 1000);
+      
+      setPreviousMessageCount(messages.length);
+      
+      return () => clearTimeout(timer);
+    } else {
+      setPreviousMessageCount(messages.length);
+    }
+  }, [messages.length, previousMessageCount]);
 
   if (isLoading) {
     return (
@@ -43,13 +67,16 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({ messages, currentUser
       {messages.map((message, index) => {
         const isCurrentUser = message.userId === currentUserId;
         const showAvatar = index === messages.length - 1 || messages[index + 1].userId !== message.userId;
+        const messageId = message.id || `temp-${message.createdAt}`;
+        const isNew = newMessageIds.has(messageId);
 
         return (
           <ChatMessageItem
-            key={message.id || index}
+            key={messageId}
             message={message}
             isCurrentUser={isCurrentUser}
             showAvatar={showAvatar}
+            isNew={isNew}
           />
         );
       })}

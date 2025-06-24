@@ -101,7 +101,7 @@ export default function LoginPage(): React.JSX.Element {
           setLoaderMessage(t('auth.login.githubAuth'));
           
           // Обмениваем код на access token через наш backend
-          const response = await fetch('http://localhost:5000/api/auth/github/exchange', {
+          const response = await fetch('http://localhost:5001/api/auth/github/exchange', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

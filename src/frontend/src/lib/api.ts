@@ -96,7 +96,8 @@ export class TokenManager {
 }
 
 // API клиент
-const API_BASE_URL = 'http://localhost:5001';
+// Добавляем префикс `/api`, чтобы все запросы шли на правильный маршрут
+const API_BASE_URL = 'http://localhost:5001/api';
 
 class ApiClient {
   private baseUrl: string;
@@ -251,23 +252,65 @@ class ApiClient {
   // --- Chat API ---
 
   async getChats(): Promise<ChatDto[]> {
-    return this.request<ChatDto[]>('/api/chat');
+    return this.request<ChatDto[]>('/chat');
   }
 
   async createChat(data: CreateChatRequest): Promise<ChatDto> {
-    return this.request<ChatDto>(`/api/chat`, {
+    return this.request<ChatDto>(`/chat`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async getMessages(chatId: string, page: number = 1, pageSize: number = 50): Promise<MessageDto[]> {
-    return this.request<MessageDto[]>(`/api/chats/${chatId}/messages?page=${page}&pageSize=${pageSize}`);
+    return this.request<MessageDto[]>(`/chats/${chatId}/messages?page=${page}&pageSize=${pageSize}`);
   }
 
-  async uploadAvatar(): Promise<{ filePath: string }> {
-    // Для FormData нам не нужен заголовок 'Content-Type': 'application/json'
-    // ... existing code ...
+  // --- File API ---
+
+  async uploadFile(file: File, chatId: string, content?: string): Promise<MessageDto> {
+    const token = TokenManager.getToken();
+    const headers: Record<string, string> = {};
+
+    if (token && TokenManager.isAuthenticated()) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('chatId', chatId);
+    if (content) {
+      formData.append('content', content);
+    }
+
+    const response = await fetch(`${this.baseUrl}/files/upload`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    if (response.status === 401) {
+      TokenManager.removeToken();
+      window.location.href = '/auth/login';
+      return Promise.reject(new Error('Сессия истекла'));
+    }
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Network error' }));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  async getFileInfo(fileName: string): Promise<{
+    fileName: string;
+    size: number;
+    mimeType: string;
+    uploadDate: string;
+    url: string;
+  }> {
+    return this.request(`/files/info/${fileName}`);
   }
 }
 

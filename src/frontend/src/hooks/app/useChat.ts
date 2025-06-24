@@ -145,5 +145,56 @@ export const useChat = (chatId: string | null) => {
     }
   }, [chatId]);
 
-  return { messages, sendMessage, isLoading, typingUsers, sendTypingNotification };
+  const uploadFile = useCallback(async (file: File, content?: string) => {
+    if (!chatId || !user) return;
+
+    const tempId = `temp_${Date.now()}`;
+    
+    // Определение типа сообщения на основе MIME-типа файла
+    let messageType: 'Image' | 'File' | 'Voice' | 'Video' = 'File';
+    if (file.type.startsWith('image/')) {
+      messageType = 'Image';
+    } else if (file.type.startsWith('audio/')) {
+      messageType = 'Voice';
+    } else if (file.type.startsWith('video/')) {
+      messageType = 'Video';
+    }
+    
+    const optimisticMessage: MessageDto = {
+      id: tempId,
+      tempId: tempId,
+      chatId: chatId,
+      userId: user.id,
+      userName: user.username,
+      avatarUrl: user.avatar,
+      content: content || '',
+      type: messageType,
+      fileName: file.name,
+      fileSize: file.size,
+      mimeType: file.type,
+      createdAt: new Date().toISOString(),
+      isSending: true,
+    };
+
+    setMessages((prevMessages) => [...prevMessages, optimisticMessage]);
+
+    try {
+      const uploadedMessage = await apiClient.uploadFile(file, chatId, content);
+      
+      // Заменяем временное сообщение на серверную версию
+      setMessages((prevMessages) => prevMessages.map((m: MessageDto) => 
+        m.id === tempId ? { ...uploadedMessage, isSending: false } : m
+      ));
+
+      // Уведомляем через SignalR о новом сообщении (если сервер не делает это автоматически)
+      await signalrService.sendMessage(chatId, uploadedMessage.content, uploadedMessage.id);
+    } catch (error) {
+      console.error("Failed to upload file:", error);
+      setMessages((prevMessages) => prevMessages.map((m: MessageDto) => 
+        m.id === tempId ? { ...m, isSending: false, hasError: true } : m
+      ));
+    }
+  }, [chatId, user]);
+
+  return { messages, sendMessage, uploadFile, isLoading, typingUsers, sendTypingNotification };
 }; 

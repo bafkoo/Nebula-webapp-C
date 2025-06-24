@@ -124,6 +124,10 @@ namespace NebulaChat.API.Services
                 AuthorId = userId,
                 Content = request.Content,
                 Type = request.Type,
+                FileUrl = request.FileUrl,
+                FileName = request.FileName,
+                FileSize = request.FileSize,
+                MimeType = request.MimeType,
                 ReplyToMessageId = request.ReplyToMessageId,
                 CreatedAt = DateTime.UtcNow
             };
@@ -142,6 +146,11 @@ namespace NebulaChat.API.Services
                 .FirstAsync(m => m.Id == message.Id);
 
             return _mapper.Map<MessageDto>(createdMessage);
+        }
+
+        public async Task<MessageDto> SendMessageAsync(SendMessageRequest request, Guid userId)
+        {
+            return await SendMessageAsync(request.ChatId, request, userId);
         }
     }
 } 
