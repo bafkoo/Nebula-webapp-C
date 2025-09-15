@@ -107,7 +107,7 @@ public class NebulaChatDbContext : DbContext
             // Индекс для поиска активных чатов
             entity.HasIndex(e => new { e.IsArchived, e.LastMessageAt })
                 .HasDatabaseName("IX_Chats_ActiveChats")
-                .HasFilter("\"IsArchived\" = false");
+                .HasFilter("[IsArchived] = 0");
             
             // Индекс для поиска по названию
             entity.HasIndex(e => e.Name)
@@ -170,17 +170,17 @@ public class NebulaChatDbContext : DbContext
             // Индекс для ответов на сообщения
             entity.HasIndex(e => e.ReplyToMessageId)
                 .HasDatabaseName("IX_Messages_ReplyTo")
-                .HasFilter("\"ReplyToMessageId\" IS NOT NULL");
+                .HasFilter("[ReplyToMessageId] IS NOT NULL");
                 
             // Индекс для поиска отредактированных сообщений
             entity.HasIndex(e => new { e.ChatId, e.IsEdited })
                 .HasDatabaseName("IX_Messages_Chat_Edited")
-                .HasFilter("\"IsEdited\" = true");
+                .HasFilter("[IsEdited] = 1");
                 
             // Индекс для поиска удаленных сообщений (soft delete)
             entity.HasIndex(e => new { e.ChatId, e.IsDeleted })
                 .HasDatabaseName("IX_Messages_Chat_Deleted")
-                .HasFilter("\"IsDeleted\" = true");
+                .HasFilter("[IsDeleted] = 1");
                 
             // Поддержка soft delete - скрываем удаленные сообщения
             entity.HasQueryFilter(e => !e.IsDeleted);
@@ -212,7 +212,7 @@ public class NebulaChatDbContext : DbContext
             entity.HasOne(e => e.LastReadMessage)
                 .WithMany()
                 .HasForeignKey(e => e.LastReadMessageId)
-                .OnDelete(DeleteBehavior.SetNull); // Обнулить при удалении сообщения
+                .OnDelete(DeleteBehavior.Restrict); // Не удалять участников при удалении сообщения
                 
             // КРИТИЧЕСКИЙ ИНДЕКС - уникальность участников в чате
             entity.HasIndex(e => new { e.ChatId, e.UserId })
@@ -230,16 +230,16 @@ public class NebulaChatDbContext : DbContext
             // Индекс для активных участников (не забаненных)
             entity.HasIndex(e => new { e.ChatId, e.IsBanned })
                 .HasDatabaseName("IX_ChatParticipants_Chat_Active")
-                .HasFilter("\"IsBanned\" = false");
-                
+                .HasFilter("[IsBanned] = 0");
+
             // Индекс для отслеживания непрочитанных сообщений
             entity.HasIndex(e => new { e.UserId, e.LastReadMessageId, e.ChatId })
                 .HasDatabaseName("IX_ChatParticipants_UnreadMessages");
-                
+
             // Индекс для уведомлений
             entity.HasIndex(e => new { e.UserId, e.NotificationsEnabled })
                 .HasDatabaseName("IX_ChatParticipants_Notifications")
-                .HasFilter("\"NotificationsEnabled\" = true");
+                .HasFilter("[NotificationsEnabled] = 1");
         });
         
         // BannedUser entity configuration
@@ -247,10 +247,10 @@ public class NebulaChatDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
-            
+
             entity.Property(e => e.Reason)
                 .HasMaxLength(500);
-            
+
             // Связь с чатом
             entity.HasOne(e => e.Chat)
                 .WithMany(c => c.BannedUsers)
@@ -273,6 +273,90 @@ public class NebulaChatDbContext : DbContext
             entity.HasIndex(e => new { e.ChatId, e.UserId })
                 .IsUnique()
                 .HasDatabaseName("IX_BannedUsers_Unique");
+        });
+
+        // ChatInvite entity configuration
+        modelBuilder.Entity<ChatInvite>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+
+            // Связь с чатом
+            entity.HasOne(e => e.Chat)
+                .WithMany()
+                .HasForeignKey(e => e.ChatId)
+                .OnDelete(DeleteBehavior.Cascade); // Удалять приглашение при удалении чата
+
+            // Связь с приглашающим пользователем
+            entity.HasOne(e => e.Inviter)
+                .WithMany()
+                .HasForeignKey(e => e.InviterId)
+                .OnDelete(DeleteBehavior.Restrict); // Не удалять приглашения при удалении пользователя
+
+            // Связь с приглашенным пользователем
+            entity.HasOne(e => e.Invitee)
+                .WithMany()
+                .HasForeignKey(e => e.InviteeId)
+                .OnDelete(DeleteBehavior.Restrict); // Не удалять приглашения при удалении пользователя
+
+            // Индекс для поиска приглашений по чату
+            entity.HasIndex(e => e.ChatId)
+                .HasDatabaseName("IX_ChatInvites_Chat");
+
+            // Индекс для поиска приглашений по приглашенному пользователю
+            entity.HasIndex(e => e.InviteeId)
+                .HasDatabaseName("IX_ChatInvites_Invitee");
+
+            // Индекс для поиска истекших приглашений
+            entity.HasIndex(e => e.ExpiresAt)
+                .HasDatabaseName("IX_ChatInvites_ExpiresAt");
+        });
+
+        // AdminActionLog entity configuration
+        modelBuilder.Entity<AdminActionLog>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+
+            entity.Property(e => e.ActionType)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(e => e.TargetType)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(e => e.Reason)
+                .HasMaxLength(500);
+
+            // Связь с чатом
+            entity.HasOne(e => e.Chat)
+                .WithMany()
+                .HasForeignKey(e => e.ChatId)
+                .OnDelete(DeleteBehavior.Cascade); // Удалять логи при удалении чата
+
+            // Связь с администратором
+            entity.HasOne(e => e.Admin)
+                .WithMany()
+                .HasForeignKey(e => e.AdminId)
+                .OnDelete(DeleteBehavior.Restrict); // Не удалять логи при удалении админа
+
+            // Индекс для поиска логов по чату
+            entity.HasIndex(e => e.ChatId)
+                .HasDatabaseName("IX_AdminActionLogs_Chat");
+
+            // Индекс для поиска логов по администратору
+            entity.HasIndex(e => e.AdminId)
+                .HasDatabaseName("IX_AdminActionLogs_Admin");
+
+            // Индекс для поиска по типу действия
+            entity.HasIndex(e => e.ActionType)
+                .HasDatabaseName("IX_AdminActionLogs_ActionType");
+
+            // Индекс для поиска по времени
+            entity.HasIndex(e => e.Timestamp)
+                .HasDatabaseName("IX_AdminActionLogs_Timestamp")
+                .IsDescending();
         });
 
         // Дополнительные ограничения на уровне базы данных

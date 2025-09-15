@@ -157,4 +157,4 @@ Console.WriteLine($"🌐 Server will be available at: http://localhost:5001");
 Console.WriteLine($"💬 SignalR Chat Hub available at: ws://localhost:5001/chatHub");
 Console.WriteLine($"🔧 Environment: {app.Environment.EnvironmentName}");
 
-app.Run();
+await app.RunAsync();

@@ -165,7 +165,7 @@ namespace NebulaChat.API.Services
             // Поиск по тексту (регистронезависимый)
             if (!string.IsNullOrWhiteSpace(request.Query))
             {
-                query = query.Where(m => EF.Functions.ILike(m.Content, $"%{request.Query}%"));
+                query = query.Where(m => m.Content.Contains(request.Query));
             }
 
             // Фильтр по чату
