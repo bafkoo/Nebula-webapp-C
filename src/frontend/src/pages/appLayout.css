@@ -1,0 +1,54 @@
+/* #region appMount__51fd7, body */
+.appMount__51fd7, body {
+  background: var(--background-base-lowest);
+  text-rendering: optimizeLegibility;
+}
+/* #endregion appMount__51fd7, body */
+
+/* #region appMount__51fd7 */
+.appMount__51fd7 {
+  color: var(--background-base-lowest);
+  display: flex
+;
+  flex-direction: column;
+  overflow: hidden;
+  position: absolute;
+}
+/* #endregion appMount__51fd7 */
+
+/* #region appMount__51fd7, body, html */
+
+.appMount__51fd7, body, html {
+  height: 100%;
+  width: 100%;
+}
+/* #endregion appMount__51fd7, body, html */
+
+/* #region notAppAsidePanel_a3002d */
+.notAppAsidePanel_a3002d {
+  flex: 1;
+  min-width: 0;
+}
+/* #endregion notAppAsidePanel_a3002d */
+
+/*#region .app_a3002d, .mobileApp_a3002d*/ 
+.app_a3002d, .mobileApp_a3002d {
+  height: 100%;
+  z-index: auto;
+}
+/*#endregion .app_a3002d, .mobileApp_a3002d*/
+
+
+.app_a3002d {
+  position: static;
+}
+
+/* #region appAsidePanelWrapper_a3002d */
+.appAsidePanelWrapper_a3002d {
+  display: flex
+;
+  flex: 1 1 auto;
+  flex-direction: row;
+  min-height: 0;
+}
+/* #endregion appAsidePanelWrapper_a3002d */

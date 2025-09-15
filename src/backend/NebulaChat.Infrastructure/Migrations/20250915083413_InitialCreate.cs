@@ -15,23 +15,23 @@ namespace NebulaChat.Infrastructure.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Username = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Email = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    PasswordHash = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    IsEmailVerified = table.Column<bool>(type: "bit", nullable: false),
-                    EmailVerifiedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    EmailVerificationToken = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    EmailVerificationTokenExpiry = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    PasswordResetToken = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    PasswordResetTokenExpiry = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    LastLoginAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    GoogleId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    GitHubId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    AppleId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    AvatarUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Username = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    Email = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    PasswordHash = table.Column<string>(type: "text", nullable: false),
+                    IsEmailVerified = table.Column<bool>(type: "boolean", nullable: false),
+                    EmailVerifiedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    EmailVerificationToken = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    EmailVerificationTokenExpiry = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    PasswordResetToken = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    PasswordResetTokenExpiry = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    LastLoginAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    GoogleId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    GitHubId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    AppleId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    AvatarUrl = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -42,18 +42,18 @@ namespace NebulaChat.Infrastructure.Migrations
                 name: "Chats",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
-                    Type = table.Column<int>(type: "int", nullable: false),
-                    AvatarUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    CreatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    MaxParticipants = table.Column<int>(type: "int", nullable: true, defaultValue: 100),
-                    IsPrivate = table.Column<bool>(type: "bit", nullable: false),
-                    IsArchived = table.Column<bool>(type: "bit", nullable: false),
-                    LastMessageAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    Type = table.Column<int>(type: "integer", nullable: false),
+                    AvatarUrl = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    MaxParticipants = table.Column<int>(type: "integer", nullable: true, defaultValue: 100),
+                    IsPrivate = table.Column<bool>(type: "boolean", nullable: false),
+                    IsArchived = table.Column<bool>(type: "boolean", nullable: false),
+                    LastMessageAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -71,16 +71,16 @@ namespace NebulaChat.Infrastructure.Migrations
                 name: "AdminActionLogs",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ChatId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    AdminId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ActionType = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    TargetType = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    TargetId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Reason = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    Timestamp = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ChatId = table.Column<Guid>(type: "uuid", nullable: false),
+                    AdminId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ActionType = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    TargetType = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    TargetId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Reason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -103,14 +103,14 @@ namespace NebulaChat.Infrastructure.Migrations
                 name: "BannedUsers",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ChatId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    BannedById = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Reason = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    BannedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ChatId = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    BannedById = table.Column<Guid>(type: "uuid", nullable: false),
+                    Reason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    BannedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -139,13 +139,13 @@ namespace NebulaChat.Infrastructure.Migrations
                 name: "ChatInvites",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ChatId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    InviterId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    InviteeId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ExpiresAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ChatId = table.Column<Guid>(type: "uuid", nullable: false),
+                    InviterId = table.Column<Guid>(type: "uuid", nullable: false),
+                    InviteeId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ExpiresAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -174,22 +174,22 @@ namespace NebulaChat.Infrastructure.Migrations
                 name: "Messages",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ChatId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    AuthorId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Content = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: false),
-                    Type = table.Column<int>(type: "int", nullable: false),
-                    FileUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    FileName = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ChatId = table.Column<Guid>(type: "uuid", nullable: false),
+                    AuthorId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Content = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: false),
+                    Type = table.Column<int>(type: "integer", nullable: false),
+                    FileUrl = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    FileName = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     FileSize = table.Column<long>(type: "bigint", nullable: true),
-                    MimeType = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    IsEdited = table.Column<bool>(type: "bit", nullable: false),
-                    EditedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    ReplyToMessageId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    MimeType = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    IsEdited = table.Column<bool>(type: "boolean", nullable: false),
+                    EditedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    ReplyToMessageId = table.Column<Guid>(type: "uuid", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -219,21 +219,21 @@ namespace NebulaChat.Infrastructure.Migrations
                 name: "ChatParticipants",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ChatId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Role = table.Column<int>(type: "int", nullable: false),
-                    JoinedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    LastReadAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    LastReadMessageId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    IsBanned = table.Column<bool>(type: "bit", nullable: false),
-                    BannedUntil = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    BanReason = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    HasLeft = table.Column<bool>(type: "bit", nullable: false),
-                    LeftAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    NotificationsEnabled = table.Column<bool>(type: "bit", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ChatId = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Role = table.Column<int>(type: "integer", nullable: false),
+                    JoinedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    LastReadAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    LastReadMessageId = table.Column<Guid>(type: "uuid", nullable: true),
+                    IsBanned = table.Column<bool>(type: "boolean", nullable: false),
+                    BannedUntil = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    BanReason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    HasLeft = table.Column<bool>(type: "boolean", nullable: false),
+                    LeftAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    NotificationsEnabled = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -319,7 +319,7 @@ namespace NebulaChat.Infrastructure.Migrations
                 name: "IX_ChatParticipants_Chat_Active",
                 table: "ChatParticipants",
                 columns: new[] { "ChatId", "IsBanned" },
-                filter: "[IsBanned] = 0");
+                filter: "\"IsBanned\" = false");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ChatParticipants_Chat_Joined",
@@ -335,7 +335,7 @@ namespace NebulaChat.Infrastructure.Migrations
                 name: "IX_ChatParticipants_Notifications",
                 table: "ChatParticipants",
                 columns: new[] { "UserId", "NotificationsEnabled" },
-                filter: "[NotificationsEnabled] = 1");
+                filter: "\"NotificationsEnabled\" = true");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ChatParticipants_Unique",
@@ -357,7 +357,7 @@ namespace NebulaChat.Infrastructure.Migrations
                 name: "IX_Chats_ActiveChats",
                 table: "Chats",
                 columns: new[] { "IsArchived", "LastMessageAt" },
-                filter: "[IsArchived] = 0");
+                filter: "\"IsArchived\" = false");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Chats_CreatedBy",
@@ -395,19 +395,19 @@ namespace NebulaChat.Infrastructure.Migrations
                 name: "IX_Messages_Chat_Deleted",
                 table: "Messages",
                 columns: new[] { "ChatId", "IsDeleted" },
-                filter: "[IsDeleted] = 1");
+                filter: "\"IsDeleted\" = true");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Messages_Chat_Edited",
                 table: "Messages",
                 columns: new[] { "ChatId", "IsEdited" },
-                filter: "[IsEdited] = 1");
+                filter: "\"IsEdited\" = true");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Messages_ReplyTo",
                 table: "Messages",
                 column: "ReplyToMessageId",
-                filter: "[ReplyToMessageId] IS NOT NULL");
+                filter: "\"ReplyToMessageId\" IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_AppleId",

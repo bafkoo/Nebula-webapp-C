@@ -107,7 +107,7 @@ public class NebulaChatDbContext : DbContext
             // Индекс для поиска активных чатов
             entity.HasIndex(e => new { e.IsArchived, e.LastMessageAt })
                 .HasDatabaseName("IX_Chats_ActiveChats")
-                .HasFilter("[IsArchived] = 0");
+                .HasFilter("\"IsArchived\" = false");
             
             // Индекс для поиска по названию
             entity.HasIndex(e => e.Name)
@@ -170,17 +170,17 @@ public class NebulaChatDbContext : DbContext
             // Индекс для ответов на сообщения
             entity.HasIndex(e => e.ReplyToMessageId)
                 .HasDatabaseName("IX_Messages_ReplyTo")
-                .HasFilter("[ReplyToMessageId] IS NOT NULL");
+                .HasFilter("\"ReplyToMessageId\" IS NOT NULL");
                 
             // Индекс для поиска отредактированных сообщений
             entity.HasIndex(e => new { e.ChatId, e.IsEdited })
                 .HasDatabaseName("IX_Messages_Chat_Edited")
-                .HasFilter("[IsEdited] = 1");
+                .HasFilter("\"IsEdited\" = true");
                 
             // Индекс для поиска удаленных сообщений (soft delete)
             entity.HasIndex(e => new { e.ChatId, e.IsDeleted })
                 .HasDatabaseName("IX_Messages_Chat_Deleted")
-                .HasFilter("[IsDeleted] = 1");
+                .HasFilter("\"IsDeleted\" = true");
                 
             // Поддержка soft delete - скрываем удаленные сообщения
             entity.HasQueryFilter(e => !e.IsDeleted);
@@ -230,7 +230,7 @@ public class NebulaChatDbContext : DbContext
             // Индекс для активных участников (не забаненных)
             entity.HasIndex(e => new { e.ChatId, e.IsBanned })
                 .HasDatabaseName("IX_ChatParticipants_Chat_Active")
-                .HasFilter("[IsBanned] = 0");
+                .HasFilter("\"IsBanned\" = false");
 
             // Индекс для отслеживания непрочитанных сообщений
             entity.HasIndex(e => new { e.UserId, e.LastReadMessageId, e.ChatId })
@@ -239,7 +239,7 @@ public class NebulaChatDbContext : DbContext
             // Индекс для уведомлений
             entity.HasIndex(e => new { e.UserId, e.NotificationsEnabled })
                 .HasDatabaseName("IX_ChatParticipants_Notifications")
-                .HasFilter("[NotificationsEnabled] = 1");
+                .HasFilter("\"NotificationsEnabled\" = true");
         });
         
         // BannedUser entity configuration

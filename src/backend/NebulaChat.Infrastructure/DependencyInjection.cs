@@ -17,7 +17,7 @@ public static class DependencyInjection
         
         // Add DbContext
         services.AddDbContext<NebulaChatDbContext>(options =>
-            options.UseSqlServer(connectionString,
+            options.UseNpgsql(connectionString,
                 b => b.MigrationsAssembly("NebulaChat.Infrastructure")));
 
         // Регистрация репозиториев и UnitOfWork

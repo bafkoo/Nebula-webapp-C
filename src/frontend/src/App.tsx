@@ -19,6 +19,7 @@ import GitHubCallback from './pages/auth/GitHubCallback'
 // Main Pages
 import LandingPage from './pages/LandingPage'
 import DashboardIconsDemo from './pages/DashboardIconsDemo'
+import AppLayout from './pages/appLayout'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "26914621923-ljnfmjat63o7gp3b9ornl1n65ho4g12v.apps.googleusercontent.com";
 
@@ -51,6 +52,16 @@ function App() {
               element={
                 <ProtectedRoute requireVerificationPending={true}>
                   <VerificationPage />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Protected App Routes */}
+            <Route 
+              path="/app/*" 
+              element={
+                <ProtectedRoute requireAuth={true}>
+                  <AppLayout />
                 </ProtectedRoute>
               } 
             />
