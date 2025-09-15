@@ -1,5 +1,6 @@
 import React from 'react';
-import './appLayout.css';
+import './mePage.css';
+import HeadderBar from '../components/headderBar/headderBar';
 
 /**
  * AppLayout - Основной макет приложения
@@ -7,7 +8,7 @@ import './appLayout.css';
  * Эта страница служит связующим элементом между различными частями приложения.
  * Здесь будет размещаться общий контент и навигация между разделами.
  */
-const AppLayout: React.FC = () => {
+const mePage: React.FC = () => {
   return (
     <div id="app-mount" className="appMount_51fd7">
       {/* SVG дефиниции и маски */}
@@ -25,13 +26,19 @@ const AppLayout: React.FC = () => {
       <div style={{ position: 'fixed', opacity: 0, pointerEvents: 'none' }} />
       <div className="appAsidePanelWrapper_a3002d">
         <div className="notAppAsidePanel_a3002d" data-app-not-dev-tools="true">
-            <div className="app_a3002d">
-                <div className="app_a3002d">
-                    <div className="bg__960e4 theme-dark theme-midnight images-dark">
-                    <div className="app__160d8">
-                     <div className="app__160d8"></div>
-                    </div>    
-            </div>
+            <div className="app_a3002d">  
+              <div className="app__160d8">
+                <div className="bg__960e4 theme-dark theme-midnight images-dark"></div>
+                <div className="layers__960e4 layers__160d8">
+                    <div data-layer="base" aria-hidden="false" className="layer__960e4 baseLayer__960e4">
+                        <div className="container_c48ade">
+                            <div className="base_c48ade" data-fullscreen="false">
+                              <HeadderBar />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+              </div>
           </div>
         </div>
       </div>
@@ -39,4 +46,4 @@ const AppLayout: React.FC = () => {
   );
 };
 
-export default AppLayout;
+export default mePage;

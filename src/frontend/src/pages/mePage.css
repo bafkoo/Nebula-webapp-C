@@ -1,0 +1,196 @@
+/* #region appMount__51fd7, body */
+.appMount__51fd7, body {
+  background: var(--background-base-lowest);
+  text-rendering: optimizeLegibility;
+}
+/* #endregion appMount__51fd7, body */
+
+/* #region appMount__51fd7 */
+.appMount__51fd7 {
+  color: var(--background-base-lowest);
+  display: flex
+;
+  flex-direction: column;
+  overflow: hidden;
+  position: absolute;
+}
+/* #endregion appMount__51fd7 */
+
+/* #region appMount__51fd7, body, html */
+
+.appMount__51fd7, body, html {
+  height: 100%;
+  width: 100%;
+}
+/* #endregion appMount__51fd7, body, html */
+
+/* #region notAppAsidePanel_a3002d */
+.notAppAsidePanel_a3002d {
+  flex: 1;
+  min-width: 0;
+}
+/* #endregion notAppAsidePanel_a3002d */
+
+/*#region .app_a3002d, .mobileApp_a3002d*/ 
+.app_a3002d, .mobileApp_a3002d {
+  height: 100%;
+  z-index: auto;
+}
+/*#endregion .app_a3002d, .mobileApp_a3002d*/
+
+/* #region bg__960e4 */
+.bg__960e4 {
+  background: var(--background-gradient-app-frame, var(--background-base-lowest));
+  bottom: 0;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+/* #endregion bg__960e4 */
+
+/* #region app__160d8 */
+.app__160d8 {
+  background-color: var(--background-base-lowest);
+  bottom: 0;
+  display: flex
+;
+  flex-direction: column;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+/* #endregion app__160d8 */
+
+/* #region app_a3002d */
+.app_a3002d {
+  position: static;
+}
+/* #endregion app_a3002d */
+
+/* #region layers__960e4 */
+.layers__960e4 {
+  overflow: hidden;
+  position: relative;
+}
+/* #endregion layers__960e4 */
+
+/* #region layers__160d8 */
+.layers__160d8 {
+  display: flex
+;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+/* #endregion layers__160d8 */
+
+/* #region layer__960e4 */
+.layer__960e4 {
+  background-color: var(--background-base-low);
+}
+/* #endregion layer__960e4 */
+
+/* #region layer__960e4.baseLayer__960e4 */
+.layer__960e4.baseLayer__960e4 {
+  background-color: transparent;
+}
+/* #endregion layer__960e4.baseLayer__960e4 */
+
+/* #region layers__960e4>.layer__960e4 */
+.layers__960e4>.layer__960e4 {
+  bottom: 0;
+  display: flex
+;
+  flex-direction: column;
+  left: 0;
+  overflow: hidden;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+/* #endregion layers__960e4>.layer__960e4 */
+
+/* #region align-chat-input .container_c48ade */
+.align-chat-input .container_c48ade {
+  --custom-chat-input-margin-bottom: var(--space-xs);
+}
+/* #endregion align-chat-input .container_c48ade */
+
+/* #region container_c48ade */
+.container_c48ade {
+  display: flex
+;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+  --custom-chat-input-margin-bottom: 24px;
+}
+/* #endregion container_c48ade */   
+
+
+/* #region leading_c38106 */
+.leading_c38106 {
+  box-sizing: border-box;
+  justify-content: flex-start;
+}
+/* #endregion leading_c38106 */
+
+/* #region leading_c38106, .trailing_c38106 */
+.leading_c38106, .trailing_c38106 {
+  align-items: center;
+  display: flex
+;
+  gap: var(--space-12);
+  position: relative;
+  z-index: 1;
+  -webkit-app-region: no-drag;
+}
+/* #endregion leading_c38106, .trailing_c38106 */
+
+/* #region base_c48ade */
+.base_c48ade {
+  flex-grow: 1;
+}
+/* #endregion base_c48ade */
+
+/* #region base_c48ade, .sidebar_c48ade */
+.base_c48ade, .sidebar_c48ade {
+  display: flex
+;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+/* #endregion base_c48ade, .sidebar_c48ade */
+
+/* #region base_c48ade */
+@supports (grid-template-columns:subgrid) and (white-space-collapse:collapse) {
+  .base_c48ade {
+      display: grid
+;
+      grid-template-areas:
+      "titleBar titleBar titleBar"
+      "guildsList notice notice"
+      "guildsList channelsList page";
+      grid-template-columns: [start] -webkit-min-content [guildsEnd] -webkit-min-content [channelsEnd] 1fr [end];
+      grid-template-columns: [start] min-content [guildsEnd] min-content [channelsEnd] 1fr [end];
+      grid-template-rows: [top] var(--custom-app-top-bar-height) [titleBarEnd] -webkit-min-content [noticeEnd] 1fr [end];
+      grid-template-rows: [top] var(--custom-app-top-bar-height) [titleBarEnd] min-content [noticeEnd] 1fr [end];
+  }
+}
+/* #endregion base_c48ade */
+
+/* #region appAsidePanelWrapper_a3002d */
+.appAsidePanelWrapper_a3002d {
+  display: flex
+;
+  flex: 1 1 auto;
+  flex-direction: row;
+  min-height: 0;
+}
+/* #endregion appAsidePanelWrapper_a3002d */
